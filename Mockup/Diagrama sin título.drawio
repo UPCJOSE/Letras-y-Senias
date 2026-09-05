@@ -1,0 +1,34 @@
+<mxfile host="Electron">
+  <diagram name="Página-1" id="mFy-p1qR3NTLDUHFINGy">
+    <mxGraphModel dx="804" dy="524" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="H5qE6-lJo80XyNYNArAA-3" parent="1" style="shape=mxgraph.mockup.containers.marginRect;rectMarginTop=10;strokeColor=#666666;strokeWidth=1;dashed=0;rounded=1;arcSize=5;recursiveResize=0;html=1;whiteSpace=wrap;align=center;" value="" vertex="1">
+          <mxGeometry height="410" width="430" x="155" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-4" parent="H5qE6-lJo80XyNYNArAA-3" style="shape=rect;strokeColor=none;fillColor=#008cff;strokeWidth=1;dashed=0;rounded=1;arcSize=20;fontColor=#ffffff;fontSize=17;spacing=2;spacingTop=-2;align=left;autosize=1;spacingLeft=4;resizeWidth=0;resizeHeight=0;perimeter=none;html=1;whiteSpace=wrap;" value="Señas" vertex="1">
+          <mxGeometry height="30" width="70" x="5" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-6" parent="H5qE6-lJo80XyNYNArAA-3" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;strokeWidth=1;shape=mxgraph.mockup.containers.videoPlayer;strokeColor=#666666;strokeColor2=#008cff;strokeColor3=#c4c4c4;textColor=#666666;fillColor2=#008cff;barHeight=30;barPos=20;" value="" vertex="1">
+          <mxGeometry height="200" width="300" x="75" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-7" parent="H5qE6-lJo80XyNYNArAA-3" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;strokeWidth=1;shape=mxgraph.mockup.containers.userMale;strokeColor=#666666;strokeColor2=#008cff;" value="" vertex="1">
+          <mxGeometry height="100" width="100" x="175" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-8" parent="H5qE6-lJo80XyNYNArAA-3" style="verticalLabelPosition=bottom;shadow=0;dashed=0;align=center;html=1;verticalAlign=top;strokeWidth=1;shape=mxgraph.mockup.forms.splitter;strokeColor=#999999;" value="" vertex="1">
+          <mxGeometry height="10" width="430" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-9" parent="H5qE6-lJo80XyNYNArAA-3" style="strokeWidth=1;shadow=0;dashed=0;align=center;html=1;shape=mxgraph.mockup.buttons.button;strokeColor=#666666;fontColor=#ffffff;mainText=;buttonStyle=round;fontSize=17;fontStyle=1;fillColor=#008cff;whiteSpace=wrap;" value="Traducir" vertex="1">
+          <mxGeometry height="30" width="80" x="95" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-10" parent="H5qE6-lJo80XyNYNArAA-3" style="strokeWidth=1;shadow=0;dashed=0;align=center;html=1;shape=mxgraph.mockup.buttons.button;strokeColor=#666666;fontColor=#ffffff;mainText=;buttonStyle=round;fontSize=17;fontStyle=1;fillColor=#008cff;whiteSpace=wrap;" value="Grabar" vertex="1">
+          <mxGeometry height="30" width="80" x="255" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="H5qE6-lJo80XyNYNArAA-11" parent="H5qE6-lJo80XyNYNArAA-3" style="strokeWidth=1;shadow=0;dashed=0;align=center;html=1;shape=mxgraph.mockup.text.textBox;fontColor=#666666;align=left;fontSize=17;spacingLeft=4;spacingTop=-3;whiteSpace=wrap;strokeColor=#666666;mainText=" value="hola como estas" vertex="1">
+          <mxGeometry height="110" width="385" x="15" y="250" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
