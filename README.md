@@ -68,25 +68,25 @@ Seguimos POO y lo visto en clase: **UI**, **modelo** y **servicio** separados.
 
 ```
 lib/
-├── main.dart                 # Solo arranca la app
+├── main.dart                          # Solo arranca la app
 ├── model/
-│   └── sign_entry.dart       # Entrada del diccionario (palabra + video)
+│   └── entrada_sena.dart              # Entrada del diccionario (palabra + video)
 ├── service/
-│   └── dictionary_service.dart  # Búsqueda en el catálogo (por implementar)
+│   └── servicio_diccionario.dart      # Búsqueda en el catálogo (por implementar)
 └── ui/
-    ├── app.dart              # MaterialApp, tema y colores
-    └── translator/
-        ├── translator_page.dart
+    ├── aplicacion.dart                # MaterialApp, tema y colores
+    └── traductor/
+        ├── pagina_traductor.dart
         └── widgets/
-            ├── sign_video_panel.dart
-            ├── video_controls_bar.dart
-            └── text_input_panel.dart
+            ├── panel_video_senas.dart
+            ├── barra_controles_video.dart
+            └── panel_entrada_texto.dart
 ```
 
 | Capa | Responsabilidad |
 |------|-----------------|
 | `ui/` | Pantallas y widgets (lo que ve el usuario) |
-| `model/` | Datos (ej. `SignEntry`) |
+| `model/` | Datos (ej. `EntradaSena`) |
 | `service/` | Lógica de negocio (diccionario, más adelante voz, etc.) |
 
 ---

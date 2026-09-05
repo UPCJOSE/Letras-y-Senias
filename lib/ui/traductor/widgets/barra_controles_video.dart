@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:movi/ui/app.dart';
+import 'package:movi/ui/aplicacion.dart';
 
 /// Barra de controles del video (solo UI; sin reproducción real aún).
-class VideoControlsBar extends StatelessWidget {
-  const VideoControlsBar({
+class BarraControlesVideo extends StatelessWidget {
+  const BarraControlesVideo({
     super.key,
-    required this.durationLabel,
+    required this.etiquetaDuracion,
   });
 
-  final String durationLabel;
+  final String etiquetaDuracion;
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +16,9 @@ class VideoControlsBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: Row(
         children: [
-          const Icon(Icons.play_arrow, color: AppColors.blue, size: 28),
+          const Icon(Icons.play_arrow, color: ColoresApp.azul, size: 28),
           const SizedBox(width: 4),
-          const Icon(Icons.volume_up, color: AppColors.black, size: 20),
+          const Icon(Icons.volume_up, color: ColoresApp.negro, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: SliderTheme(
@@ -26,9 +26,9 @@ class VideoControlsBar extends StatelessWidget {
                 trackHeight: 3,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                activeTrackColor: AppColors.blue,
+                activeTrackColor: ColoresApp.azul,
                 inactiveTrackColor: Color(0xFFDDDDDD),
-                thumbColor: AppColors.blue,
+                thumbColor: ColoresApp.azul,
               ),
               child: Slider(
                 value: 0,
@@ -37,14 +37,14 @@ class VideoControlsBar extends StatelessWidget {
             ),
           ),
           Text(
-            durationLabel,
+            etiquetaDuracion,
             style: const TextStyle(
               fontSize: 12,
-              color: AppColors.blackSoft,
+              color: ColoresApp.negroSuave,
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(Icons.fullscreen, color: AppColors.black, size: 22),
+          const Icon(Icons.fullscreen, color: ColoresApp.negro, size: 22),
         ],
       ),
     );

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:movi/ui/app.dart';
+import 'package:movi/ui/aplicacion.dart';
 
 /// Panel inferior: campo de texto + botones Traducir y Grabar.
 /// Al tocar el campo se abre el teclado del móvil.
-class TextInputPanel extends StatelessWidget {
-  const TextInputPanel({
+class PanelEntradaTexto extends StatelessWidget {
+  const PanelEntradaTexto({
     super.key,
-    required this.controller,
-    required this.focusNode,
-    required this.onTraducir,
-    required this.onGrabar,
+    required this.controlador,
+    required this.nodoFoco,
+    required this.alTraducir,
+    required this.alGrabar,
   });
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final VoidCallback onTraducir;
-  final VoidCallback onGrabar;
+  final TextEditingController controlador;
+  final FocusNode nodoFoco;
+  final VoidCallback alTraducir;
+  final VoidCallback alGrabar;
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +23,9 @@ class TextInputPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: ColoresApp.blanco,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1.5),
+        border: Border.all(color: ColoresApp.borde, width: 1.5),
       ),
       child: Column(
         children: [
@@ -33,10 +33,10 @@ class TextInputPanel extends StatelessWidget {
             // Tocar cualquier parte del área del texto enfoca el campo.
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => focusNode.requestFocus(),
+              onTap: () => nodoFoco.requestFocus(),
               child: TextField(
-                controller: controller,
-                focusNode: focusNode,
+                controller: controlador,
+                focusNode: nodoFoco,
                 enabled: true,
                 readOnly: false,
                 autofocus: false,
@@ -46,34 +46,34 @@ class TextInputPanel extends StatelessWidget {
                 maxLines: null,
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
-                cursorColor: AppColors.blue,
+                cursorColor: ColoresApp.azul,
                 style: const TextStyle(
                   fontSize: 16,
-                  color: AppColors.blackSoft,
+                  color: ColoresApp.negroSuave,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Toca aquí para escribir...',
-                  hintStyle: const TextStyle(color: AppColors.hint),
+                  hintStyle: const TextStyle(color: ColoresApp.textoAyuda),
                   contentPadding: const EdgeInsets.all(12),
                   filled: true,
-                  fillColor: AppColors.white,
+                  fillColor: ColoresApp.blanco,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.black),
+                    borderSide: const BorderSide(color: ColoresApp.negro),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.black),
+                    borderSide: const BorderSide(color: ColoresApp.negro),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(
-                      color: AppColors.blue,
+                      color: ColoresApp.azul,
                       width: 1.5,
                     ),
                   ),
                 ),
-                onTap: () => focusNode.requestFocus(),
+                onTap: () => nodoFoco.requestFocus(),
               ),
             ),
           ),
@@ -82,14 +82,14 @@ class TextInputPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onTraducir,
+                  onPressed: alTraducir,
                   child: const Text('Traducir'),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: onGrabar,
+                  onPressed: alGrabar,
                   child: const Text('Grabar'),
                 ),
               ),

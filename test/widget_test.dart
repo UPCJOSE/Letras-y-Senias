@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:movi/ui/app.dart';
+import 'package:movi/ui/aplicacion.dart';
 
 void main() {
-  testWidgets('La app muestra Señas, Traducir y Grabar', (tester) async {
-    await tester.pumpWidget(const MoviApp());
+  testWidgets('La app muestra Señas, Traducir y Grabar', (probador) async {
+    await probador.pumpWidget(const AplicacionMovi());
 
     expect(find.text('Señas'), findsOneWidget);
     expect(find.text('Traducir'), findsOneWidget);

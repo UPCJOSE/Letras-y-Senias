@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:movi/ui/app.dart';
-import 'package:movi/ui/translator/widgets/video_controls_bar.dart';
+import 'package:movi/ui/aplicacion.dart';
+import 'package:movi/ui/traductor/widgets/barra_controles_video.dart';
 
 /// Panel superior: aquí se reproducirán los videos de las señas.
-class SignVideoPanel extends StatelessWidget {
-  const SignVideoPanel({
+class PanelVideoSenas extends StatelessWidget {
+  const PanelVideoSenas({
     super.key,
-    required this.durationLabel,
-    this.signLabel,
+    required this.etiquetaDuracion,
+    this.etiquetaSena,
   });
 
-  final String durationLabel;
+  final String etiquetaDuracion;
 
   /// Texto de la seña actual (placeholder hasta conectar el video real).
-  final String? signLabel;
+  final String? etiquetaSena;
 
   @override
   Widget build(BuildContext context) {
-    final haySena = signLabel != null && signLabel!.isNotEmpty;
+    final haySena = etiquetaSena != null && etiquetaSena!.isNotEmpty;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: ColoresApp.blanco,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1.5),
+        border: Border.all(color: ColoresApp.borde, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,13 +34,13 @@ class SignVideoPanel extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.blue,
+                color: ColoresApp.azul,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
                 'Señas',
                 style: TextStyle(
-                  color: AppColors.white,
+                  color: ColoresApp.blanco,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -53,8 +53,8 @@ class SignVideoPanel extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: AppColors.white,
-                  border: Border.all(color: AppColors.black, width: 1.2),
+                  color: ColoresApp.blanco,
+                  border: Border.all(color: ColoresApp.negro, width: 1.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Column(
@@ -62,12 +62,12 @@ class SignVideoPanel extends StatelessWidget {
                     Expanded(
                       child: Center(
                         child: haySena
-                            ? _SignPlaceholder(label: signLabel!)
-                            : const _EmptySignPlaceholder(),
+                            ? _MarcadorSena(etiqueta: etiquetaSena!)
+                            : const _MarcadorSenaVacio(),
                       ),
                     ),
                     if (haySena)
-                      VideoControlsBar(durationLabel: durationLabel),
+                      BarraControlesVideo(etiquetaDuracion: etiquetaDuracion),
                   ],
                 ),
               ),
@@ -80,8 +80,8 @@ class SignVideoPanel extends StatelessWidget {
 }
 
 /// Estado vacío: aún no hay seña que mostrar.
-class _EmptySignPlaceholder extends StatelessWidget {
-  const _EmptySignPlaceholder();
+class _MarcadorSenaVacio extends StatelessWidget {
+  const _MarcadorSenaVacio();
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +93,7 @@ class _EmptySignPlaceholder extends StatelessWidget {
           Icon(
             Icons.sign_language_outlined,
             size: 64,
-            color: AppColors.black,
+            color: ColoresApp.negro,
           ),
           SizedBox(height: 12),
           Text(
@@ -102,7 +102,7 @@ class _EmptySignPlaceholder extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppColors.black,
+              color: ColoresApp.negro,
             ),
           ),
           SizedBox(height: 6),
@@ -111,7 +111,7 @@ class _EmptySignPlaceholder extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: AppColors.hint,
+              color: ColoresApp.textoAyuda,
             ),
           ),
         ],
@@ -120,11 +120,11 @@ class _EmptySignPlaceholder extends StatelessWidget {
   }
 }
 
-/// Placeholder temporal cuando ya hay texto traducido (luego será video).
-class _SignPlaceholder extends StatelessWidget {
-  const _SignPlaceholder({required this.label});
+/// Marcador temporal cuando ya hay texto traducido (luego será video).
+class _MarcadorSena extends StatelessWidget {
+  const _MarcadorSena({required this.etiqueta});
 
-  final String label;
+  final String etiqueta;
 
   @override
   Widget build(BuildContext context) {
@@ -135,22 +135,22 @@ class _SignPlaceholder extends StatelessWidget {
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.black, width: 2),
+            border: Border.all(color: ColoresApp.negro, width: 2),
           ),
           child: const Icon(
             Icons.person_outline,
             size: 72,
-            color: AppColors.black,
+            color: ColoresApp.negro,
           ),
         ),
         const SizedBox(height: 12),
         Text(
-          label,
+          etiqueta,
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.blackSoft,
+            color: ColoresApp.negroSuave,
           ),
         ),
       ],

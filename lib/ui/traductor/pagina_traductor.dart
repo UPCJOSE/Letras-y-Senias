@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:movi/ui/app.dart';
-import 'package:movi/ui/translator/widgets/sign_video_panel.dart';
-import 'package:movi/ui/translator/widgets/text_input_panel.dart';
+import 'package:movi/ui/aplicacion.dart';
+import 'package:movi/ui/traductor/widgets/panel_video_senas.dart';
+import 'package:movi/ui/traductor/widgets/panel_entrada_texto.dart';
 
 /// Pantalla principal del traductor: señas arriba, texto y acciones abajo.
 ///
@@ -10,37 +10,37 @@ import 'package:movi/ui/translator/widgets/text_input_panel.dart';
 /// 2) Escribe el texto.
 /// 3) Pulsa Traducir → las señas se muestran en el panel superior
 ///    (no es automático al escribir; así controlamos cuándo buscar).
-class TranslatorPage extends StatefulWidget {
-  const TranslatorPage({super.key});
+class PaginaTraductor extends StatefulWidget {
+  const PaginaTraductor({super.key});
 
   @override
-  State<TranslatorPage> createState() => _TranslatorPageState();
+  State<PaginaTraductor> createState() => _EstadoPaginaTraductor();
 }
 
-class _TranslatorPageState extends State<TranslatorPage> {
-  final TextEditingController _textController = TextEditingController();
-  final FocusNode _textFocusNode = FocusNode();
+class _EstadoPaginaTraductor extends State<PaginaTraductor> {
+  final TextEditingController _controladorTexto = TextEditingController();
+  final FocusNode _nodoFocoTexto = FocusNode();
 
   /// Por ahora solo UI: más adelante aquí irá el video de la seña.
-  String? _signLabel;
+  String? _etiquetaSena;
 
   @override
   void dispose() {
-    _textController.dispose();
-    _textFocusNode.dispose();
+    _controladorTexto.dispose();
+    _nodoFocoTexto.dispose();
     super.dispose();
   }
 
   void _cerrarTeclado() {
-    _textFocusNode.unfocus();
+    _nodoFocoTexto.unfocus();
   }
 
-  void _onTraducir() {
+  void _alPulsarTraducir() {
     _cerrarTeclado();
-    final texto = _textController.text.trim();
+    final texto = _controladorTexto.text.trim();
 
     setState(() {
-      _signLabel = texto.isEmpty ? null : texto;
+      _etiquetaSena = texto.isEmpty ? null : texto;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -55,7 +55,7 @@ class _TranslatorPageState extends State<TranslatorPage> {
     );
   }
 
-  void _onGrabar() {
+  void _alPulsarGrabar() {
     _cerrarTeclado();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -68,7 +68,7 @@ class _TranslatorPageState extends State<TranslatorPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: ColoresApp.fondo,
       // Al abrir el teclado, la pantalla se ajusta y no tapa el campo.
       resizeToAvoidBottomInset: true,
       body: SafeArea(
@@ -78,19 +78,19 @@ class _TranslatorPageState extends State<TranslatorPage> {
             children: [
               Expanded(
                 flex: 5,
-                child: SignVideoPanel(
-                  durationLabel: '0:00/3:53',
-                  signLabel: _signLabel,
+                child: PanelVideoSenas(
+                  etiquetaDuracion: '0:00/3:53',
+                  etiquetaSena: _etiquetaSena,
                 ),
               ),
-              const _PanelDivider(),
+              const _SeparadorPaneles(),
               Expanded(
                 flex: 4,
-                child: TextInputPanel(
-                  controller: _textController,
-                  focusNode: _textFocusNode,
-                  onTraducir: _onTraducir,
-                  onGrabar: _onGrabar,
+                child: PanelEntradaTexto(
+                  controlador: _controladorTexto,
+                  nodoFoco: _nodoFocoTexto,
+                  alTraducir: _alPulsarTraducir,
+                  alGrabar: _alPulsarGrabar,
                 ),
               ),
             ],
@@ -102,8 +102,8 @@ class _TranslatorPageState extends State<TranslatorPage> {
 }
 
 /// Separador visual entre el panel de señas y el de texto (mockup).
-class _PanelDivider extends StatelessWidget {
-  const _PanelDivider();
+class _SeparadorPaneles extends StatelessWidget {
+  const _SeparadorPaneles();
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +112,7 @@ class _PanelDivider extends StatelessWidget {
       child: Row(
         children: [
           const Expanded(
-            child: Divider(thickness: 1, color: AppColors.black),
+            child: Divider(thickness: 1, color: ColoresApp.negro),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -124,7 +124,7 @@ class _PanelDivider extends StatelessWidget {
                   height: 5,
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: const BoxDecoration(
-                    color: AppColors.black,
+                    color: ColoresApp.negro,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -132,7 +132,7 @@ class _PanelDivider extends StatelessWidget {
             ),
           ),
           const Expanded(
-            child: Divider(thickness: 1, color: AppColors.black),
+            child: Divider(thickness: 1, color: ColoresApp.negro),
           ),
         ],
       ),

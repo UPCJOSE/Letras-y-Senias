@@ -1,16 +1,16 @@
-import 'package:movi/model/sign_entry.dart';
+import 'package:movi/model/entrada_sena.dart';
 
 /// Servicio del diccionario texto → señas.
 /// En esta fase solo existe la clase; la lógica se implementará después.
-class DictionaryService {
+class ServicioDiccionario {
   /// Busca una seña por palabra. Aún no conectado a datos reales.
-  Future<SignEntry?> findByWord(String word) async {
+  Future<EntradaSena?> buscarPorPalabra(String palabra) async {
     // TODO: cargar diccionario (JSON / BD local) y buscar la palabra.
     return null;
   }
 
   /// Lista todas las señas del catálogo.
-  Future<List<SignEntry>> getAllSigns() async {
+  Future<List<EntradaSena>> obtenerTodasLasSenas() async {
     // TODO: devolver el catálogo completo.
     return [];
   }
