@@ -68,26 +68,34 @@ Seguimos POO y lo visto en clase: **UI**, **modelo** y **servicio** separados.
 
 ```
 lib/
-├── main.dart                          # Solo arranca la app
+├── main.dart
 ├── model/
-│   └── entrada_sena.dart              # Entrada del diccionario (palabra + video)
+│   ├── entrada_sena.dart
+│   └── concepto_palabra.dart       # Concepto + lista de alias
 ├── service/
-│   └── servicio_diccionario.dart      # Búsqueda en el catálogo (por implementar)
+│   ├── servicio_diccionario.dart
+│   └── servicio_palabras.dart      # Añadir alias (memoria / demo)
 └── ui/
-    ├── aplicacion.dart                # MaterialApp, tema y colores
-    └── traductor/
-        ├── pagina_traductor.dart
+    ├── aplicacion.dart
+    ├── shell/
+    │   └── pagina_principal.dart   # Nav: Traductor | Admin CMS
+    ├── traductor/ ...
+    └── admin/
+        ├── pagina_admin.dart
+        ├── pestanas/
+        │   ├── pestana_senas.dart      # + Añadir Seña
+        │   └── pestana_palabras.dart   # + Añadir alias
         └── widgets/
-            ├── panel_video_senas.dart
-            ├── barra_controles_video.dart
-            └── panel_entrada_texto.dart
+            ├── dialogo_nueva_sena.dart
+            ├── dialogo_anadir_alias.dart
+            └── tarjeta_concepto.dart
 ```
 
 | Capa | Responsabilidad |
 |------|-----------------|
 | `ui/` | Pantallas y widgets (lo que ve el usuario) |
-| `model/` | Datos (ej. `EntradaSena`) |
-| `service/` | Lógica de negocio (diccionario, más adelante voz, etc.) |
+| `model/` | Datos (ej. `EntradaSena`, `ConceptoPalabra`) |
+| `service/` | Lógica de negocio (diccionario, alias, etc.) |
 
 ---
 

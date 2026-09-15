@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:movi/ui/traductor/pagina_traductor.dart';
+import 'package:movi/ui/shell/pagina_principal.dart';
 
 /// Paleta amigable: blanco, azul en botones y negro en detalles.
 class ColoresApp {
@@ -46,7 +46,7 @@ class AplicacionMovi extends StatelessWidget {
           ),
         ),
       ),
-      home: const PaginaTraductor(),
+      home: const PaginaPrincipal(),
     );
   }
 }
