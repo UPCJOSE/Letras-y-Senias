@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:movi/model/sesion_usuario.dart';
 import 'package:movi/ui/admin/pagina_admin.dart';
-import 'package:movi/ui/aplicacion.dart';
+import 'package:movi/ui/palabras/pagina_palabras.dart';
+import 'package:movi/ui/shell/widgets/cabecera_lsc.dart';
+import 'package:movi/ui/shell/widgets/navegacion_superior.dart';
+import 'package:movi/ui/suscripcion/pagina_suscripcion.dart';
 import 'package:movi/ui/traductor/pagina_traductor.dart';
+import 'package:movi/ui/vectorial/pagina_vectorial.dart';
 
-/// Contenedor con navegación inferior: Traductor y Admin CMS.
+/// Shell LSC App: cabecera + nav + contenido (port del mockup React).
 class PaginaPrincipal extends StatefulWidget {
   const PaginaPrincipal({super.key});
 
@@ -13,38 +18,54 @@ class PaginaPrincipal extends StatefulWidget {
 
 class _EstadoPaginaPrincipal extends State<PaginaPrincipal> {
   int _indice = 0;
+  SesionUsuario? _sesion;
 
-  static const _paginas = [
-    PaginaTraductor(),
-    PaginaAdmin(),
-  ];
+  void _iniciarSesion(SesionUsuario s) {
+    setState(() {
+      _sesion = s;
+      _indice = 4; // suscripción para ver confirmación
+    });
+  }
+
+  void _cerrarSesion() {
+    setState(() {
+      _sesion = null;
+      if (_indice == 2 || _indice == 3) _indice = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _indice,
-        children: _paginas,
+    final paginas = [
+      const PaginaTraductor(),
+      const PaginaPalabras(),
+      const PaginaVectorial(),
+      const PaginaAdmin(),
+      PaginaSuscripcion(
+        sesion: _sesion,
+        alIniciarSesion: _iniciarSesion,
+        alCerrarSesion: _cerrarSesion,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _indice,
-        onDestinationSelected: (i) => setState(() => _indice = i),
-        indicatorColor: ColoresApp.azul.withValues(alpha: 0.15),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.sign_language_outlined),
-            selectedIcon: Icon(Icons.sign_language, color: ColoresApp.azul),
-            label: 'Traductor',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.admin_panel_settings_outlined),
-            selectedIcon: Icon(
-              Icons.admin_panel_settings,
-              color: ColoresApp.azul,
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: SafeArea(
+        child: Column(
+          children: [
+            CabeceraLsc(sesion: _sesion),
+            NavegacionSuperior(
+              indice: _indice,
+              alCambiar: (i) => setState(() => _indice = i),
             ),
-            label: 'Admin CMS',
-          ),
-        ],
+            Expanded(
+              child: IndexedStack(
+                index: _indice,
+                children: paginas,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

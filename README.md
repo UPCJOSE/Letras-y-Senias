@@ -53,12 +53,14 @@ Más adelante (fases siguientes) se pueden sumar lecciones tipo Duolingo, quiz, 
 
 ## Estado actual
 
-**Solo frontend / UI** del traductor (mockup implementado).
+UI portada del mockup Figma/React (**Mockup de aplicación de señas**) a Flutter:
 
-- Pantalla blanca, botones azules y detalles negros.
-- Panel de señas con estado vacío y placeholder al traducir.
-- Campo de texto con teclado en móvil.
-- `model` y `service` existen como esqueleto para la siguiente fase (sin lógica real aún).
+- Cabecera LSC App · Fase 1 · sesión / estado
+- Nav: Traductor · Palabras · Vectorial · Admin CMS · Suscripción
+- Catálogo real de ~20 señas (traductor + galería)
+- Admin: Nueva Seña + Añadir alias
+- Suscripción con login mock (Google) y sesión
+- Colores: blanco / azul / negro (adaptados del morado del mockup web)
 
 ---
 
