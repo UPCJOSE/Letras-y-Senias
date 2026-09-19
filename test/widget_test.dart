@@ -1,46 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:movi/ui/aplicacion.dart';
+import 'package:movi/ui/auth/pagina_splash.dart';
+import 'package:movi/ui/shell/pagina_principal.dart';
 
 void main() {
-  testWidgets('Shell LSC muestra diseño del mockup', (probador) async {
-    await probador.pumpWidget(const AplicacionMovi());
-
-    expect(find.text('LSC App'), findsOneWidget);
-    expect(find.text('Fase 1'), findsOneWidget);
-    expect(find.text('Traductor'), findsOneWidget);
-    expect(find.text('Palabras'), findsOneWidget);
-    expect(find.text('Vectorial'), findsOneWidget);
-    expect(find.text('Admin CMS'), findsOneWidget);
-    expect(find.text('Suscripción'), findsOneWidget);
-    expect(find.text('Traductor Texto → Señas'), findsOneWidget);
-  });
-
-  testWidgets('Traductor encuentra seña del catálogo', (probador) async {
-    await probador.pumpWidget(const AplicacionMovi());
-
-    await probador.enterText(
-      find.byType(TextField).first,
-      'hola',
+  testWidgets('Splash muestra marca SeñasApp', (probador) async {
+    await probador.pumpWidget(const MaterialApp(home: PaginaSplash()));
+    expect(find.text('SeñasApp'), findsOneWidget);
+    expect(
+      find.textContaining('Lengua de Señas Colombiana'),
+      findsOneWidget,
     );
-    await probador.tap(find.text('Traducir'));
-    await probador.pumpAndSettle();
-
-    expect(find.text('✓ En catálogo'), findsOneWidget);
+    await probador.pump(const Duration(milliseconds: 2500));
   });
 
-  testWidgets('Admin abre Añadir alias en Palabras', (probador) async {
-    await probador.pumpWidget(const AplicacionMovi());
+  testWidgets('Navegación principal Inicio Diccionario Perfil', (probador) async {
+    await probador.pumpWidget(const MaterialApp(home: PaginaPrincipal()));
 
-    await probador.tap(find.text('Admin CMS'));
+    expect(find.text('Inicio'), findsWidgets);
+    expect(find.text('Diccionario'), findsOneWidget);
+    expect(find.text('Perfil'), findsOneWidget);
+    expect(find.text('Traducir a LSC'), findsOneWidget);
+
+    await probador.tap(find.text('Diccionario'));
     await probador.pumpAndSettle();
-    await probador.tap(find.text('Palabras').last);
+    expect(find.text('Diccionario LSC'), findsOneWidget);
+
+    await probador.tap(find.text('Perfil'));
+    await probador.pumpAndSettle();
+    expect(find.text('Mi perfil'), findsOneWidget);
+    expect(find.text('Ana Gómez'), findsOneWidget);
+  });
+
+  testWidgets('Menú hamburguesa muestra opciones', (probador) async {
+    await probador.pumpWidget(const MaterialApp(home: PaginaPrincipal()));
+
+    await probador.tap(find.byType(FloatingActionButton));
     await probador.pumpAndSettle();
 
-    await probador.tap(find.text('+ Añadir alias').first);
-    await probador.pumpAndSettle();
-
-    expect(find.text('Añadir alias'), findsOneWidget);
-    expect(find.text('Guardar alias'), findsOneWidget);
+    expect(find.text('NAVEGAR A PANTALLA'), findsOneWidget);
+    expect(find.text('Splash'), findsOneWidget);
+    expect(find.text('Inicio de sesión'), findsOneWidget);
+    expect(find.text('Diccionario'), findsWidgets);
   });
 }

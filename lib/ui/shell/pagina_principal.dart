@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:movi/model/sesion_usuario.dart';
-import 'package:movi/ui/admin/pagina_admin.dart';
-import 'package:movi/ui/palabras/pagina_palabras.dart';
-import 'package:movi/ui/shell/widgets/cabecera_lsc.dart';
-import 'package:movi/ui/shell/widgets/navegacion_superior.dart';
-import 'package:movi/ui/suscripcion/pagina_suscripcion.dart';
-import 'package:movi/ui/traductor/pagina_traductor.dart';
-import 'package:movi/ui/vectorial/pagina_vectorial.dart';
+import 'package:movi/ui/aplicacion.dart';
+import 'package:movi/ui/diccionario/pagina_diccionario.dart';
+import 'package:movi/ui/inicio/pagina_inicio.dart';
+import 'package:movi/ui/perfil/pagina_perfil.dart';
+import 'package:movi/ui/shell/widgets/menu_hamburguesa.dart';
 
-/// Shell LSC App: cabecera + nav + contenido (port del mockup React).
+/// Shell principal: Inicio · Diccionario · Perfil + FAB hamburguesa.
 class PaginaPrincipal extends StatefulWidget {
   const PaginaPrincipal({super.key});
 
@@ -18,54 +15,56 @@ class PaginaPrincipal extends StatefulWidget {
 
 class _EstadoPaginaPrincipal extends State<PaginaPrincipal> {
   int _indice = 0;
-  SesionUsuario? _sesion;
 
-  void _iniciarSesion(SesionUsuario s) {
-    setState(() {
-      _sesion = s;
-      _indice = 4; // suscripción para ver confirmación
-    });
-  }
-
-  void _cerrarSesion() {
-    setState(() {
-      _sesion = null;
-      if (_indice == 2 || _indice == 3) _indice = 0;
-    });
-  }
+  static const _paginas = [
+    PaginaInicio(),
+    PaginaDiccionario(),
+    PaginaPerfil(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final paginas = [
-      const PaginaTraductor(),
-      const PaginaPalabras(),
-      const PaginaVectorial(),
-      const PaginaAdmin(),
-      PaginaSuscripcion(
-        sesion: _sesion,
-        alIniciarSesion: _iniciarSesion,
-        alCerrarSesion: _cerrarSesion,
-      ),
-    ];
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: ColoresApp.fondo,
       body: SafeArea(
-        child: Column(
-          children: [
-            CabeceraLsc(sesion: _sesion),
-            NavegacionSuperior(
-              indice: _indice,
-              alCambiar: (i) => setState(() => _indice = i),
-            ),
-            Expanded(
-              child: IndexedStack(
-                index: _indice,
-                children: paginas,
-              ),
-            ),
-          ],
+        child: IndexedStack(
+          index: _indice,
+          children: _paginas,
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => mostrarMenuHamburguesa(
+          context,
+          irAPestana: (i) => setState(() => _indice = i),
+        ),
+        backgroundColor: ColoresApp.azul,
+        elevation: 4,
+        child: const Icon(Icons.menu, color: ColoresApp.blanco),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: NavigationBar(
+        height: 68,
+        backgroundColor: ColoresApp.blanco,
+        indicatorColor: ColoresApp.azulSuave,
+        selectedIndex: _indice,
+        onDestinationSelected: (i) => setState(() => _indice = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: ColoresApp.azul),
+            label: 'Inicio',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book, color: ColoresApp.azul),
+            label: 'Diccionario',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: ColoresApp.azul),
+            label: 'Perfil',
+          ),
+        ],
       ),
     );
   }
