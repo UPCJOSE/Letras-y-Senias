@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:movi/model/entrada_sena.dart';
+import 'package:movi/service/servicio_diccionario.dart';
 import 'package:movi/ui/aplicacion.dart';
-import 'package:movi/ui/traductor/widgets/panel_video_senas.dart';
-import 'package:movi/ui/traductor/widgets/panel_entrada_texto.dart';
+import 'package:movi/ui/comun/marcador_video_sena.dart';
 
-/// Pantalla principal del traductor: señas arriba, texto y acciones abajo.
-///
-/// Flujo pensado para móvil:
-/// 1) El usuario toca el campo → se abre el teclado.
-/// 2) Escribe el texto.
-/// 3) Pulsa Traducir → las señas se muestran en el panel superior
-///    (no es automático al escribir; así controlamos cuándo buscar).
+/// Traductor Texto → Señas (portado del mockup React).
 class PaginaTraductor extends StatefulWidget {
   const PaginaTraductor({super.key});
 
@@ -18,124 +13,339 @@ class PaginaTraductor extends StatefulWidget {
 }
 
 class _EstadoPaginaTraductor extends State<PaginaTraductor> {
-  final TextEditingController _controladorTexto = TextEditingController();
-  final FocusNode _nodoFocoTexto = FocusNode();
+  final _servicio = ServicioDiccionario();
+  final _controlador = TextEditingController();
+  final _nodoFoco = FocusNode();
 
-  /// Por ahora solo UI: más adelante aquí irá el video de la seña.
-  String? _etiquetaSena;
+  EntradaSena? _sena;
+  String? _textoBuscado;
+  bool _buscado = false;
+  final List<String> _historial = ['hola', 'gracias', 'familia'];
 
   @override
   void dispose() {
-    _controladorTexto.dispose();
-    _nodoFocoTexto.dispose();
+    _controlador.dispose();
+    _nodoFoco.dispose();
     super.dispose();
   }
 
-  void _cerrarTeclado() {
-    _nodoFocoTexto.unfocus();
-  }
+  void _traducir([String? forzado]) {
+    if (forzado != null) _controlador.text = forzado;
+    final texto = _controlador.text.trim();
+    _nodoFoco.unfocus();
 
-  void _alPulsarTraducir() {
-    _cerrarTeclado();
-    final texto = _controladorTexto.text.trim();
-
+    final encontrada = _servicio.buscarPorPalabra(texto);
     setState(() {
-      _etiquetaSena = texto.isEmpty ? null : texto;
+      _textoBuscado = texto;
+      _sena = encontrada;
+      _buscado = texto.isNotEmpty;
+      if (encontrada != null && !_historial.contains(encontrada.clave)) {
+        _historial.insert(0, encontrada.clave);
+        if (_historial.length > 8) _historial.removeLast();
+      }
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          texto.isEmpty
-              ? 'Escribe un texto y pulsa Traducir'
-              : 'Se mostrará la seña de: "$texto"',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _alPulsarGrabar() {
-    _cerrarTeclado();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Grabar: aquí irá la voz → texto'),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ColoresApp.fondo,
-      // Al abrir el teclado, la pantalla se ajusta y no tapa el campo.
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Expanded(
-                flex: 5,
-                child: PanelVideoSenas(
-                  etiquetaDuracion: '0:00/3:53',
-                  etiquetaSena: _etiquetaSena,
-                ),
-              ),
-              const _SeparadorPaneles(),
-              Expanded(
-                flex: 4,
-                child: PanelEntradaTexto(
-                  controlador: _controladorTexto,
-                  nodoFoco: _nodoFocoTexto,
-                  alTraducir: _alPulsarTraducir,
-                  alGrabar: _alPulsarGrabar,
-                ),
-              ),
-            ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+      children: [
+        const Center(child: Text('🤟', style: TextStyle(fontSize: 40))),
+        const SizedBox(height: 8),
+        const Text(
+          'Traductor Texto → Señas',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: ColoresApp.azul,
           ),
         ),
+        const SizedBox(height: 4),
+        const Text(
+          'Escribe una palabra en español y ve su seña en LSC',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: ColoresApp.textoAyuda),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controlador,
+                focusNode: _nodoFoco,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _traducir(),
+                decoration: _campo('Escribe una palabra... ej: hola'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: _traducir,
+              child: const Text('Traducir'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['hola', 'gracias', 'familia', 'agua', 'amor', 'ayuda']
+              .map(
+                (w) => ActionChip(
+                  label: Text(w),
+                  labelStyle: const TextStyle(color: ColoresApp.azul),
+                  backgroundColor: ColoresApp.azulSuave,
+                  side: const BorderSide(color: ColoresApp.azulClaro),
+                  onPressed: () {
+                    _controlador.text = w;
+                    setState(() {});
+                  },
+                ),
+              )
+              .toList(),
+        ),
+        if (_buscado && _textoBuscado != null) ...[
+          const SizedBox(height: 20),
+          _ResultadoTraduccion(
+            texto: _textoBuscado!,
+            sena: _sena,
+          ),
+        ],
+        if (_historial.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const Text(
+            'BÚSQUEDAS RECIENTES',
+            style: TextStyle(
+              fontSize: 11,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+              color: ColoresApp.textoAyuda,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _historial.map((clave) {
+              final s = _servicio.buscarPorPalabra(clave);
+              return InkWell(
+                onTap: () {
+                  _controlador.text = clave.replaceAll('_', ' ');
+                  setState(() {});
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF9FAFB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: ColoresApp.borde),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(s?.emoji ?? '❔', style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Text(
+                        clave.replaceAll('_', ' '),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: ColoresApp.negroSuave,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  InputDecoration _campo(String pista) {
+    return InputDecoration(
+      hintText: pista,
+      hintStyle: const TextStyle(color: ColoresApp.textoAyuda),
+      filled: true,
+      fillColor: ColoresApp.blanco,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ColoresApp.azulClaro, width: 2),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ColoresApp.azulClaro, width: 2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: ColoresApp.azul, width: 2),
       ),
     );
   }
 }
 
-/// Separador visual entre el panel de señas y el de texto (mockup).
-class _SeparadorPaneles extends StatelessWidget {
-  const _SeparadorPaneles();
+class _ResultadoTraduccion extends StatelessWidget {
+  const _ResultadoTraduccion({required this.texto, required this.sena});
+
+  final String texto;
+  final EntradaSena? sena;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Divider(thickness: 1, color: ColoresApp.negro),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: List.generate(
-                3,
-                (_) => Container(
-                  width: 5,
-                  height: 5,
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  decoration: const BoxDecoration(
-                    color: ColoresApp.negro,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const Expanded(
-            child: Divider(thickness: 1, color: ColoresApp.negro),
+    return Container(
+      decoration: BoxDecoration(
+        color: ColoresApp.blanco,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColoresApp.azulClaro, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: ColoresApp.azul.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(16),
+      child: sena != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sena!.categoria.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 1.5,
+                              color: ColoresApp.azul,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            texto,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: ColoresApp.negro,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ColoresApp.verdeSuave,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        '✓ En catálogo',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: ColoresApp.verde,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                MarcadorVideoSena(
+                  palabra: sena!.palabraVisible,
+                  emoji: sena!.emoji,
+                  grande: true,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        child: const Text('↻ Repetir'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        child: const Text('★ Guardar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                const Text('🔍', style: TextStyle(fontSize: 40)),
+                const SizedBox(height: 8),
+                Text(
+                  '"$texto" no está en el catálogo aún',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: ColoresApp.negroSuave,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Prueba con deletreo manual o sugiere añadirla',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: ColoresApp.textoAyuda),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 4,
+                  children: 'abcdefgh'
+                      .split('')
+                      .map(
+                        (l) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            l.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: ColoresApp.textoAyuda,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    backgroundColor: ColoresApp.azulSuave,
+                    foregroundColor: ColoresApp.azul,
+                  ),
+                  child: const Text('+ Sugerir esta seña'),
+                ),
+              ],
+            ),
     );
   }
 }
