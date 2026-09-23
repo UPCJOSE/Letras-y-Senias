@@ -1,38 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:movi/bll/dependencias.dart';
+import 'package:movi/bll/reproductor_secuencia.dart';
+import 'package:movi/model/sena_media.dart';
+import 'package:movi/model/traduccion_frase.dart';
 import 'package:movi/ui/aplicacion.dart';
+import 'package:video_player/video_player.dart';
 
-/// Vista de reproducción de traducción LSC (accesos rápidos).
-/// El recuadro central queda vacío: ahí irá el video de la seña.
+/// Muestra la secuencia que armó la BLL. No decide cuándo pasa la seña.
 class PaginaTraduccionLsc extends StatefulWidget {
-  const PaginaTraduccionLsc({
-    super.key,
-    required this.texto,
-    this.senasDetectadas = const [],
-  });
+  const PaginaTraduccionLsc({super.key, required this.traduccion});
 
-  final String texto;
-  final List<String> senasDetectadas;
+  final TraduccionFrase traduccion;
 
   @override
   State<PaginaTraduccionLsc> createState() => _EstadoPaginaTraduccionLsc();
 }
 
 class _EstadoPaginaTraduccionLsc extends State<PaginaTraduccionLsc> {
-  /// Controles de reproducción (play, bucle, velocidad, barra).
-  /// Ocultos por ahora; poner en `true` cuando haya video real.
-  static const bool _mostrarControlesReproduccion = false;
+  final _reproductor = ReproductorSecuencia();
+  final _texto = TextEditingController();
+  late TraduccionFrase _traduccion;
+  bool _traduciendo = false;
 
-  bool _reproduciendo = true;
-  bool _bucle = false;
-  double _velocidad = 1.0;
-  double _progreso = 0.35;
-  int _senaActiva = 0;
+  @override
+  void initState() {
+    super.initState();
+    _traduccion = widget.traduccion;
+    _texto.text = widget.traduccion.textoOriginal;
+    _reproductor.addListener(_refrescar);
+    _reproductor.reproducir(_traduccion.pasos);
+  }
+
+  void _refrescar() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _traducir() async {
+    final limpio = _texto.text.trim();
+    if (limpio.isEmpty || _traduciendo) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _traduciendo = true);
+    final traduccion = await Dependencias.traduccion.traducir(limpio);
+    if (!mounted) return;
+    setState(() {
+      _traduccion = traduccion;
+      _traduciendo = false;
+    });
+    await _reproductor.reproducir(traduccion.pasos);
+  }
+
+  @override
+  void dispose() {
+    _texto.dispose();
+    _reproductor.removeListener(_refrescar);
+    _reproductor.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final senas = widget.senasDetectadas.isEmpty
-        ? [widget.texto]
-        : widget.senasDetectadas;
+    final pasos = _traduccion.pasos;
+    final actual = _reproductor.pasoActual;
 
     return Scaffold(
       backgroundColor: ColoresApp.fondo,
@@ -87,42 +115,78 @@ class _EstadoPaginaTraduccionLsc extends State<PaginaTraduccionLsc> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          widget.texto,
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _texto,
+                          minLines: 1,
+                          maxLines: 3,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _traducir(),
                           style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                             color: ColoresApp.negro,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Escribe otra frase...',
+                            filled: true,
+                            fillColor: ColoresApp.blanco,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          onPressed: _traduciendo ? null : _traducir,
+                          icon: _traduciendo
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: ColoresApp.blanco,
+                                  ),
+                                )
+                              : const Icon(Icons.play_arrow),
+                          label: const Text('Traducir'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(46),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Recuadro vacío: aquí se colocarán los videos de señas.
                   AspectRatio(
                     aspectRatio: 4 / 3,
                     child: Container(
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8EEF8),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: ColoresApp.borde),
                       ),
-                      child: const Center(
-                        child: Text(
-                          'Área de video',
-                          style: TextStyle(
-                            color: ColoresApp.textoAyuda,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: _VistaPaso(
+                        paso: actual,
+                        controlador: _reproductor.controlador,
+                        terminado: _reproductor.terminado && actual == null,
                       ),
                     ),
                   ),
-                  if (_mostrarControlesReproduccion) ...[
-                    const SizedBox(height: 14),
-                    _panelControlesReproduccion(),
+                  if (actual != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      _reproductor.terminado
+                          ? 'Secuencia lista'
+                          : '${_reproductor.indice + 1} / ${_reproductor.total} · ${actual.texto}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: ColoresApp.textoAyuda,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 20),
                   const Text(
@@ -137,63 +201,74 @@ class _EstadoPaginaTraduccionLsc extends State<PaginaTraduccionLsc> {
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 110,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: senas.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
-                      itemBuilder: (context, i) {
-                        final activo = i == _senaActiva;
-                        return InkWell(
-                          onTap: () => setState(() => _senaActiva = i),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 88,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: activo
-                                  ? ColoresApp.azulSuave
-                                  : ColoresApp.blanco,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: activo
-                                    ? ColoresApp.azul
-                                    : ColoresApp.borde,
-                                width: activo ? 1.5 : 1,
-                              ),
+                    child: pasos.isEmpty
+                        ? const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'No hay palabras para traducir.',
+                              style: TextStyle(color: ColoresApp.textoAyuda),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Mini recuadro (sin muñeco): preview de video.
-                                Container(
-                                  width: 44,
-                                  height: 44,
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: pasos.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 10),
+                            itemBuilder: (context, i) {
+                              final paso = pasos[i];
+                              final activo = i == _reproductor.indice;
+                              return InkWell(
+                                onTap: () => _reproductor.saltarA(i),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: 88,
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE8EEF8),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: ColoresApp.borde),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  senas[i],
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
                                     color: activo
-                                        ? ColoresApp.azul
-                                        : ColoresApp.negro,
+                                        ? ColoresApp.azulSuave
+                                        : ColoresApp.blanco,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: activo
+                                          ? ColoresApp.azul
+                                          : ColoresApp.borde,
+                                      width: activo ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        paso.encontrada
+                                            ? (paso.sena!.tipo == TipoMedia.video
+                                                ? Icons.movie_outlined
+                                                : Icons.image_outlined)
+                                            : Icons.search_off,
+                                        color: paso.encontrada
+                                            ? ColoresApp.azul
+                                            : ColoresApp.textoAyuda,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        paso.texto,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: paso.encontrada
+                                              ? (activo
+                                                  ? ColoresApp.azul
+                                                  : ColoresApp.negro)
+                                              : ColoresApp.textoAyuda,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),
@@ -203,104 +278,69 @@ class _EstadoPaginaTraduccionLsc extends State<PaginaTraduccionLsc> {
       ),
     );
   }
+}
 
-  Widget _panelControlesReproduccion() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ColoresApp.blanco,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ColoresApp.borde),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Material(
-                color: ColoresApp.azul,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () {
-                    setState(() => _reproduciendo = !_reproduciendo);
-                  },
-                  child: SizedBox(
-                    width: 52,
-                    height: 52,
-                    child: Icon(
-                      _reproduciendo ? Icons.pause : Icons.play_arrow,
-                      color: ColoresApp.blanco,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: () => setState(() => _bucle = !_bucle),
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _bucle
-                        ? ColoresApp.azulSuave
-                        : const Color(0xFFF3F4F6),
-                  ),
-                  child: Icon(
-                    Icons.loop,
-                    size: 20,
-                    color: _bucle ? ColoresApp.azul : ColoresApp.textoAyuda,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              ...[0.5, 1.0, 1.5].map((v) {
-                final activo = _velocidad == v;
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: InkWell(
-                    onTap: () => setState(() => _velocidad = v),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: activo ? ColoresApp.azul : Colors.transparent,
-                      ),
-                      child: Text(
-                        '${v}x',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: activo
-                              ? ColoresApp.blanco
-                              : ColoresApp.textoAyuda,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ],
+class _VistaPaso extends StatelessWidget {
+  const _VistaPaso({
+    required this.paso,
+    required this.controlador,
+    required this.terminado,
+  });
+
+  final PasoTraduccion? paso;
+  final VideoPlayerController? controlador;
+  final bool terminado;
+
+  @override
+  Widget build(BuildContext context) {
+    if (paso == null) {
+      return Center(
+        child: Text(
+          terminado ? 'Fin de la frase' : 'Área de video',
+          style: const TextStyle(
+            color: ColoresApp.textoAyuda,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 12),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              activeTrackColor: ColoresApp.azul,
-              inactiveTrackColor: ColoresApp.borde,
-              thumbColor: ColoresApp.azul,
-            ),
-            child: Slider(
-              value: _progreso,
-              onChanged: (v) => setState(() => _progreso = v),
+        ),
+      );
+    }
+
+    final sena = paso!.sena;
+    if (sena == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Sin seña para "${paso!.texto}"',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: ColoresApp.textoAyuda,
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
             ),
           ),
-        ],
+        ),
+      );
+    }
+
+    if (sena.tipo == TipoMedia.imagen) {
+      final imagen = sena.origen == OrigenMedia.remoto
+          ? Image.network(sena.ruta, fit: BoxFit.contain)
+          : Image.asset(sena.ruta, fit: BoxFit.contain);
+      return Padding(padding: const EdgeInsets.all(12), child: imagen);
+    }
+
+    final listo = controlador != null && controlador!.value.isInitialized;
+    if (!listo) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Center(
+      child: AspectRatio(
+        aspectRatio: controlador!.value.aspectRatio == 0
+            ? 16 / 9
+            : controlador!.value.aspectRatio,
+        child: VideoPlayer(controlador!),
       ),
     );
   }

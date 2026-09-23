@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:movi/service/servicio_diccionario.dart';
+import 'package:movi/bll/dependencias.dart';
 import 'package:movi/ui/aplicacion.dart';
 import 'package:movi/ui/sugerencias/pagina_palabra_no_encontrada.dart';
 import 'package:movi/ui/traduccion/pagina_traduccion_lsc.dart';
@@ -14,7 +14,6 @@ class PaginaInicio extends StatefulWidget {
 
 class _EstadoPaginaInicio extends State<PaginaInicio> {
   final _controlador = TextEditingController();
-  final _servicio = ServicioDiccionario();
   final List<_ItemHistorial> _historial = [
     const _ItemHistorial('Hola, necesito ayuda', 'hace 2 min'),
     const _ItemHistorial('¿Dónde está el baño?', 'hace 1 hora'),
@@ -27,34 +26,21 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
     super.dispose();
   }
 
-  void _abrirAccesoRapido({
-    required String texto,
-    required List<String> senas,
-  }) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PaginaTraduccionLsc(
-          texto: texto,
-          senasDetectadas: senas,
-        ),
-      ),
-    );
-  }
-
-  void _traducir() {
-    final texto = _controlador.text.trim();
-    if (texto.isEmpty) return;
-
-    final sena = _servicio.buscarPorPalabra(texto);
+  Future<void> _traducirTexto(String texto) async {
+    final limpio = texto.trim();
+    if (limpio.isEmpty) return;
 
     setState(() {
-      _historial.insert(0, _ItemHistorial(texto, 'ahora'));
+      _historial.insert(0, _ItemHistorial(limpio, 'ahora'));
     });
 
-    if (sena == null) {
+    final traduccion = await Dependencias.traduccion.traducir(limpio);
+    if (!mounted) return;
+
+    if (!traduccion.tieneSenas) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => PaginaPalabraNoEncontrada(textoEscrito: texto),
+          builder: (_) => PaginaPalabraNoEncontrada(textoEscrito: limpio),
         ),
       );
       return;
@@ -62,10 +48,7 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PaginaTraduccionLsc(
-          texto: texto,
-          senasDetectadas: [sena.palabraVisible],
-        ),
+        builder: (_) => PaginaTraduccionLsc(traduccion: traduccion),
       ),
     );
   }
@@ -153,12 +136,12 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Ejemplo: Hola, necesito ayuda',
+                'Ejemplo: hola amigo',
                 style: TextStyle(fontSize: 12, color: ColoresApp.textoAyuda),
               ),
               const SizedBox(height: 14),
               ElevatedButton.icon(
-                onPressed: _traducir,
+                onPressed: () => _traducirTexto(_controlador.text),
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Traducir a LSC'),
                 style: ElevatedButton.styleFrom(
@@ -187,10 +170,7 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
                 etiqueta: 'Hospital',
                 colorTexto: const Color(0xFFE53935),
                 colorFondo: const Color(0xFFFFEBEE),
-                alPulsar: () => _abrirAccesoRapido(
-                  texto: 'Hospital',
-                  senas: const ['Hola', 'Ayuda', 'Dolor'],
-                ),
+                alPulsar: () => _traducirTexto('hola ayudar'),
               ),
             ),
             const SizedBox(width: 10),
@@ -200,10 +180,7 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
                 etiqueta: 'Banco',
                 colorTexto: const Color(0xFFF9A825),
                 colorFondo: const Color(0xFFFFF8E1),
-                alPulsar: () => _abrirAccesoRapido(
-                  texto: 'Banco',
-                  senas: const ['Dinero', 'Cuenta', 'Ayuda'],
-                ),
+                alPulsar: () => _traducirTexto('por favor casa'),
               ),
             ),
             const SizedBox(width: 10),
@@ -213,10 +190,7 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
                 etiqueta: 'Colegio',
                 colorTexto: const Color(0xFF43A047),
                 colorFondo: const Color(0xFFE8F5E9),
-                alPulsar: () => _abrirAccesoRapido(
-                  texto: 'Colegio',
-                  senas: const ['Estudiar', 'Maestro', 'Ayuda'],
-                ),
+                alPulsar: () => _traducirTexto('hola amigo'),
               ),
             ),
             const SizedBox(width: 10),
@@ -226,10 +200,7 @@ class _EstadoPaginaInicio extends State<PaginaInicio> {
                 etiqueta: 'Emergencia',
                 colorTexto: const Color(0xFFEF6C00),
                 colorFondo: const Color(0xFFFFF3E0),
-                alPulsar: () => _abrirAccesoRapido(
-                  texto: 'Emergencia',
-                  senas: const ['Hola', 'Necesitar', 'Ayuda'],
-                ),
+                alPulsar: () => _traducirTexto('no poder'),
               ),
             ),
           ],

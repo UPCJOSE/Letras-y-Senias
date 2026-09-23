@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movi/bll/dependencias.dart';
 import 'package:movi/ui/admin/pagina_dashboard_admin.dart';
 import 'package:movi/ui/admin/pagina_editor_avatar.dart';
 import 'package:movi/ui/admin/pagina_gestion_diccionario.dart';
@@ -48,12 +49,17 @@ Future<void> mostrarMenuHamburguesa(
     OpcionMenu('Inicio', alPulsar: () => irPestana(0)),
     OpcionMenu(
       'Traducción',
-      alPulsar: () => ir(
-        const PaginaTraduccionLsc(
-          texto: 'Hola, necesito ayuda',
-          senasDetectadas: ['Hola', 'Necesitar', 'Ayuda'],
-        ),
-      ),
+      alPulsar: () async {
+        Navigator.of(context).pop();
+        final traduccion =
+            await Dependencias.traduccion.traducir('hola amigo');
+        if (!context.mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PaginaTraduccionLsc(traduccion: traduccion),
+          ),
+        );
+      },
     ),
     OpcionMenu(
       'Palabra no encontrada',
