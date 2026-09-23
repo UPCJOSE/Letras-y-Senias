@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movi/bll/dependencias.dart';
 import 'package:movi/ui/aplicacion.dart';
 import 'package:movi/ui/traduccion/pagina_traduccion_lsc.dart';
 
@@ -162,15 +163,15 @@ class _EstadoPaginaHistorial extends State<PaginaHistorial> {
                                     shape: const CircleBorder(),
                                     child: InkWell(
                                       customBorder: const CircleBorder(),
-                                      onTap: () {
+                                      onTap: () async {
+                                        final traduccion = await Dependencias
+                                            .traduccion
+                                            .traducir(i.texto);
+                                        if (!context.mounted) return;
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder: (_) => PaginaTraduccionLsc(
-                                              texto: i.texto,
-                                              senasDetectadas: List.generate(
-                                                i.senas,
-                                                (n) => 'Seña ${n + 1}',
-                                              ),
+                                              traduccion: traduccion,
                                             ),
                                           ),
                                         );

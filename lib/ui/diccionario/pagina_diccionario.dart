@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movi/bll/dependencias.dart';
 import 'package:movi/service/servicio_diccionario.dart';
 import 'package:movi/ui/aplicacion.dart';
 import 'package:movi/ui/traduccion/pagina_traduccion_lsc.dart';
@@ -139,13 +140,14 @@ class _EstadoPaginaDiccionario extends State<PaginaDiccionario> {
             itemBuilder: (context, i) {
               final s = lista[i];
               return InkWell(
-                onTap: () {
+                onTap: () async {
+                  final traduccion =
+                      await Dependencias.traduccion.traducir(s.palabraVisible);
+                  if (!context.mounted) return;
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => PaginaTraduccionLsc(
-                        texto: s.palabraVisible,
-                        senasDetectadas: [s.palabraVisible],
-                      ),
+                      builder: (_) =>
+                          PaginaTraduccionLsc(traduccion: traduccion),
                     ),
                   );
                 },
