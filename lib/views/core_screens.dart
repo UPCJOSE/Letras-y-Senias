@@ -74,8 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 14),
                     FilledButton.icon(
                       onPressed: () {
-                        controller.translate(_text.text);
-                        context.go('/translate');
+                        context.go(controller.translateRoute(_text.text));
                       },
                       icon: const Icon(Icons.sign_language_outlined),
                       label: const Text('Traducir a LSC'),
@@ -139,8 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: Text('${item.label} · ${item.signCount} señas'),
                       trailing: IconButton(
                         onPressed: () {
-                          controller.translate(item.text);
-                          context.go('/translate');
+                          context.go(controller.translateRoute(item.text));
                         },
                         icon: const Icon(
                           Icons.play_circle_fill,
@@ -166,8 +164,8 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) => InkWell(
     borderRadius: BorderRadius.circular(20),
     onTap: () {
-      context.read<AppController>().translate(label);
-      context.go('/translate');
+      final controller = context.read<AppController>();
+      context.go(controller.translateRoute(label));
     },
     child: Ink(
       decoration: BoxDecoration(
@@ -230,10 +228,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 hintText: 'Escribe una palabra o frase...',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_forward),
-                  onPressed: () => controller.translate(_text.text),
+                  onPressed: () =>
+                      context.go(controller.translateRoute(_text.text)),
                 ),
               ),
-              onSubmitted: controller.translate,
+              onSubmitted: (value) =>
+                  context.go(controller.translateRoute(value)),
             ),
             const SizedBox(height: 18),
             AvatarStage(
@@ -326,7 +326,9 @@ class _TranslationScreenState extends State<TranslationScreen> {
                             trailing: TextButton(
                               onPressed: () {
                                 _text.text = item.term;
-                                controller.translate(item.term);
+                                context.go(
+                                  controller.translateRoute(item.term),
+                                );
                               },
                               child: const Text('Usar'),
                             ),
@@ -375,6 +377,178 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WordNotFoundScreen extends StatelessWidget {
+  const WordNotFoundScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<AppController>();
+    final result = controller.currentTranslation;
+    return MobileCanvas(
+      child: Scaffold(
+        appBar: const SenasHeader(
+          title: 'Palabra no encontrada',
+          showBack: true,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+          children: [
+            const SizedBox(height: 10),
+            const CircleAvatar(
+              radius: 42,
+              backgroundColor: AppColors.paleYellow,
+              child: Icon(
+                Icons.manage_search,
+                size: 44,
+                color: AppColors.blueDark,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'No encontramos “${result?.originalText ?? ''}”',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Revisa estas coincidencias del diccionario de SeñasApp.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const SectionTitle('¿Quisiste decir?'),
+            const SizedBox(height: 10),
+            if (result == null || result.suggestions.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Text('No hay sugerencias disponibles.'),
+                ),
+              )
+            else
+              ...result.suggestions.map(
+                (suggestion) => Card(
+                  child: ListTile(
+                    minTileHeight: 76,
+                    leading: const CircleAvatar(
+                      backgroundColor: AppColors.paleBlue,
+                      child: Icon(Icons.sign_language, color: AppColors.blue),
+                    ),
+                    title: Text(
+                      suggestion.term,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text(
+                      '${(suggestion.similarity * 100).round()}% de similitud',
+                    ),
+                    trailing: const Icon(Icons.arrow_forward),
+                    onTap: () =>
+                        context.go(controller.translateRoute(suggestion.term)),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/home'),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Editar texto'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SpellingScreen extends StatefulWidget {
+  const SpellingScreen({super.key});
+
+  @override
+  State<SpellingScreen> createState() => _SpellingScreenState();
+}
+
+class _SpellingScreenState extends State<SpellingScreen> {
+  bool playing = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<AppController>();
+    final result = controller.currentTranslation;
+    final letters = result?.spelling ?? const <String>[];
+    return MobileCanvas(
+      child: Scaffold(
+        appBar: const SenasHeader(title: 'Deletreo', showBack: true),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          children: [
+            AvatarStage(
+              height: 270,
+              label: letters.isEmpty ? 'Listo para deletrear' : letters.first,
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: playing && letters.isNotEmpty ? 1 / letters.length : 0,
+              minHeight: 7,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: letters.asMap().entries.map((entry) {
+                final active = entry.key == 0 && playing;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: active ? AppColors.blue : AppColors.paleBlue,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    entry.value.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: active ? Colors.white : AppColors.blueDark,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              '“${result?.originalText ?? ''}” no está en el catálogo. La mostramos letra por letra con el alfabeto LSC.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  onPressed: () => setState(() => playing = true),
+                  icon: const Icon(Icons.replay),
+                ),
+                const SizedBox(width: 14),
+                IconButton.filled(
+                  onPressed: () => setState(() => playing = !playing),
+                  iconSize: 34,
+                  icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+                ),
+                const SizedBox(width: 14),
+                Chip(label: Text('${controller.playbackSpeed}x')),
+              ],
+            ),
           ],
         ),
       ),
@@ -457,8 +631,8 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       onTap: () {
-                        context.read<AppController>().translate(sign.term);
-                        context.go('/translate');
+                        final controller = context.read<AppController>();
+                        context.go(controller.translateRoute(sign.term));
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,10 +641,7 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                             child: Container(
                               color: colors[index % colors.length],
                               alignment: Alignment.center,
-                              child: const Text(
-                                '🤟',
-                                style: TextStyle(fontSize: 55),
-                              ),
+                              child: const MiniAvatar(),
                             ),
                           ),
                           Padding(

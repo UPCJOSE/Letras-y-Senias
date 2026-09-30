@@ -1,4 +1,4 @@
-enum AppRole { individual, companyAdmin, admin }
+enum AppRole { individual, admin }
 
 class SignEntry {
   const SignEntry({
@@ -48,13 +48,6 @@ class TranslationHistoryItem {
   final String text;
   final String label;
   final int signCount;
-}
-
-class CompanySummary {
-  const CompanySummary(this.name, this.users, this.active);
-  final String name;
-  final int users;
-  final bool active;
 }
 
 class DemoUser {

@@ -36,26 +36,32 @@ class SenasHeader extends StatelessWidget implements PreferredSizeWidget {
     this.title,
     this.showBack = false,
     this.actions,
+    this.leading,
   });
   final String? title;
   final bool showBack;
   final List<Widget>? actions;
+  final Widget? leading;
   @override
   Size get preferredSize => const Size.fromHeight(68);
   @override
   Widget build(BuildContext context) => AppBar(
     automaticallyImplyLeading: showBack,
+    leading: leading,
     titleSpacing: showBack ? 0 : 20,
     title: Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         if (title == null) ...[
           const Text('🤟', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 8),
         ],
-        Text(
-          title ?? 'SeñasApp',
-          style: const TextStyle(fontWeight: FontWeight.w800),
+        Flexible(
+          child: Text(
+            title ?? 'SeñasApp',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
         ),
       ],
     ),
@@ -145,6 +151,37 @@ class AvatarStage extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const AvatarIllustration(),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.blueDark,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class AvatarIllustration extends StatelessWidget {
+  const AvatarIllustration({super.key, this.scale = 1, this.accentIcon});
+  final double scale;
+  final IconData? accentIcon;
+
+  @override
+  Widget build(BuildContext context) => Transform.scale(
+    scale: scale,
+    child: Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             const CircleAvatar(
               radius: 42,
               backgroundColor: Color(0xFFFFCC80),
@@ -179,18 +216,37 @@ class AvatarStage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.blueDark,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ],
         ),
+        if (accentIcon != null)
+          Positioned(
+            right: -18,
+            top: 4,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.white,
+              child: Icon(accentIcon, color: AppColors.blue, size: 20),
+            ),
+          ),
       ],
     ),
+  );
+}
+
+class MiniAvatar extends StatelessWidget {
+  const MiniAvatar({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      CircleAvatar(
+        radius: 20,
+        backgroundColor: Color(0xFFFFCC80),
+        child: Icon(Icons.face_3, size: 28, color: AppColors.blueDark),
+      ),
+      Icon(Icons.sign_language, size: 28, color: AppColors.blueDark),
+    ],
   );
 }
 

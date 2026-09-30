@@ -11,7 +11,18 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final role = context.watch<AppController>().role;
+    final controller = context.watch<AppController>();
+    final role = controller.role;
+    final name = controller.userDisplayName;
+    final email = controller.userEmail;
+    final initials = name
+        .trim()
+        .split(' ')
+        .where((p) => p.isNotEmpty)
+        .take(2)
+        .map((p) => p[0].toUpperCase())
+        .join();
+
     return MobileCanvas(
       child: Scaffold(
         appBar: const SenasHeader(title: 'Perfil'),
@@ -24,12 +35,12 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 34,
                       backgroundColor: AppColors.paleBlue,
                       child: Text(
-                        'AG',
-                        style: TextStyle(
+                        initials.isEmpty ? 'U' : initials,
+                        style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           color: AppColors.blue,
                         ),
@@ -41,17 +52,15 @@ class ProfileScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Alex Garavis',
+                            name,
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          const Text('alex@senasapp.co'),
+                          Text(email),
                           const SizedBox(height: 6),
                           Chip(
                             label: Text(
                               role == AppRole.admin
                                   ? 'Administrador'
-                                  : role == AppRole.companyAdmin
-                                  ? 'Empresa'
                                   : 'Plan gratuito',
                             ),
                             visualDensity: VisualDensity.compact,
@@ -82,13 +91,6 @@ class ProfileScreen extends StatelessWidget {
               'Tema, accesibilidad y reproducción',
               () => context.push('/settings'),
             ),
-            if (role == AppRole.companyAdmin)
-              _ProfileTile(
-                Icons.business_outlined,
-                'Panel empresarial',
-                'Usuarios y licencia',
-                () => context.go('/company'),
-              ),
             if (role == AppRole.admin)
               _ProfileTile(
                 Icons.admin_panel_settings_outlined,
@@ -174,26 +176,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       itemCount: items.length,
                       itemBuilder: (_, index) {
                         final item = items[index];
-                        return Card(
-                          child: ListTile(
-                            minTileHeight: 76,
-                            title: Text(
-                              item.text,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
+                        final group = item.label.split(',').first;
+                        final previousGroup = index == 0
+                            ? null
+                            : items[index - 1].label.split(',').first;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (group != previousGroup) ...[
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: index == 0 ? 0 : 16,
+                                  bottom: 8,
+                                ),
+                                child: Text(
+                                  group,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                            ],
+                            Card(
+                              child: ListTile(
+                                minTileHeight: 76,
+                                title: Text(
+                                  item.text,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${item.label.contains(',') ? item.label.split(',').skip(1).join(',').trim() : item.label} · ${item.signCount} señas',
+                                ),
+                                trailing: IconButton.filledTonal(
+                                  onPressed: () => context.go(
+                                    controller.translateRoute(item.text),
+                                  ),
+                                  icon: const Icon(Icons.play_arrow),
+                                ),
                               ),
                             ),
-                            subtitle: Text(
-                              '${item.label} · ${item.signCount} señas',
-                            ),
-                            trailing: IconButton.filledTonal(
-                              onPressed: () {
-                                controller.translate(item.text);
-                                context.go('/translate');
-                              },
-                              icon: const Icon(Icons.play_arrow),
-                            ),
-                          ),
+                          ],
                         );
                       },
                     ),
@@ -276,6 +299,19 @@ class SettingsScreen extends StatelessWidget {
                     trailing: Icon(Icons.chevron_right),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await context.read<AppController>().logout();
+                if (context.mounted) context.go('/login');
+              },
+              icon: const Icon(Icons.logout),
+              label: const Text('Cerrar sesión'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                foregroundColor: Theme.of(context).colorScheme.error,
               ),
             ),
           ],

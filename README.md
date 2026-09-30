@@ -6,7 +6,7 @@ Prototipo móvil en Flutter para traducir texto a una secuencia controlada de se
 
 - Flutter web y Android inicializados.
 - Arquitectura MVC con `provider` y navegación con `go_router`.
-- 18 rutas navegables: onboarding, autenticación, traductor, diccionario, perfil, empresa y administración.
+- 18 rutas navegables: splash, onboarding, autenticación, traductor, diccionario, perfil y administración.
 - Motor local de normalización, coincidencia por frases, sugerencias y deletreo.
 - Catálogo demostrativo de 36 términos.
 - Tema claro, oscuro y alto contraste.

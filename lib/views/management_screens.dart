@@ -404,6 +404,13 @@ class AdminDashboardScreen extends StatelessWidget {
     child: Scaffold(
       appBar: SenasHeader(
         title: 'Panel Administrador',
+        leading: Builder(
+          builder: (context) => IconButton(
+            tooltip: 'Abrir menú',
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Icon(Icons.menu),
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.go('/profile'),
@@ -411,6 +418,92 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
+      ),
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 12, 10),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: AppColors.paleBlue,
+                      child: Icon(
+                        Icons.admin_panel_settings,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'SeñasApp',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            'Administración',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Cerrar menú',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              _AdminDrawerTile(
+                icon: Icons.dashboard_outlined,
+                label: 'Resumen',
+                onTap: () => _openAdminDestination(context, '/admin'),
+              ),
+              _AdminDrawerTile(
+                icon: Icons.manage_accounts_outlined,
+                label: 'Personas',
+                onTap: () => _openAdminDestination(context, '/admin/users'),
+              ),
+              _AdminDrawerTile(
+                icon: Icons.menu_book_outlined,
+                label: 'Diccionario',
+                onTap: () =>
+                    _openAdminDestination(context, '/admin/dictionary'),
+              ),
+              _AdminDrawerTile(
+                icon: Icons.category_outlined,
+                label: 'Categorías',
+                onTap: () =>
+                    _openAdminDestination(context, '/admin/dictionary'),
+              ),
+              _AdminDrawerTile(
+                icon: Icons.workspace_premium_outlined,
+                label: 'Suscripciones',
+                onTap: () => _openAdminDestination(context, '/premium'),
+              ),
+              const Spacer(),
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Panel demostrativo · sin conexiones',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
@@ -429,14 +522,14 @@ class AdminDashboardScreen extends StatelessWidget {
             mainAxisSpacing: 12,
             children: const [
               StatCard(
-                label: 'Usuarios',
+                label: 'Personas',
                 value: '1.284',
                 icon: Icons.people_outline,
               ),
               StatCard(
-                label: 'Empresas',
-                value: '18',
-                icon: Icons.business_outlined,
+                label: 'Traducciones',
+                value: '4.860',
+                icon: Icons.translate_outlined,
                 color: AppColors.green,
               ),
               StatCard(
@@ -458,8 +551,8 @@ class AdminDashboardScreen extends StatelessWidget {
           const SizedBox(height: 10),
           _AdminTile(
             Icons.manage_accounts_outlined,
-            'Gestionar usuarios',
-            'Empresas e individuales',
+            'Gestionar personas',
+            'Personas registradas',
             () => context.push('/admin/users'),
           ),
           _AdminTile(
@@ -477,6 +570,32 @@ class AdminDashboardScreen extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+void _openAdminDestination(BuildContext context, String location) {
+  final router = GoRouter.of(context);
+  final currentLocation = GoRouterState.of(context).uri.path;
+  Navigator.of(context).pop();
+  if (currentLocation != location) router.push(location);
+}
+
+class _AdminDrawerTile extends StatelessWidget {
+  const _AdminDrawerTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: Icon(icon),
+    title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+    onTap: onTap,
   );
 }
 
@@ -504,50 +623,20 @@ class _AdminTile extends StatelessWidget {
 
 class AdminUsersScreen extends StatelessWidget {
   const AdminUsersScreen({super.key});
-  static const companies = [
-    CompanySummary('Clínica Erasmo Ltda.', 25, true),
-    CompanySummary('Banco de Bogotá', 48, true),
-    CompanySummary('Colegio San Ignacio', 31, true),
-  ];
   @override
   Widget build(BuildContext context) => MobileCanvas(
     child: Scaffold(
-      appBar: const SenasHeader(title: 'Gestión de usuarios', showBack: true),
+      appBar: const SenasHeader(title: 'Gestión de personas', showBack: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
-          const SectionTitle('Empresas'),
-          const SizedBox(height: 10),
-          ...companies.map(
-            (company) => Card(
-              child: ListTile(
-                minTileHeight: 78,
-                onTap: () => context.push('/admin/company-users'),
-                leading: const CircleAvatar(
-                  backgroundColor: AppColors.paleBlue,
-                  child: Icon(Icons.business, color: AppColors.blue),
-                ),
-                title: Text(
-                  company.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text('${company.users} usuarios inscritos'),
-                trailing: const Icon(Icons.chevron_right),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const SectionTitle('Usuarios individuales'),
+          const SectionTitle('Personas registradas'),
           const SizedBox(height: 10),
           for (final user in const [
-            DemoUser('Andrés López', 'andres@email.com', 'Individual', true),
-            DemoUser('Camila Torres', 'camila@email.com', 'Individual', true),
-            DemoUser(
-              'Sebastián Ruiz',
-              'sebastian@email.com',
-              'Individual',
-              true,
-            ),
+            DemoUser('Andrés López', 'andres@email.com', 'Persona', true),
+            DemoUser('Camila Torres', 'camila@email.com', 'Persona', true),
+            DemoUser('Sebastián Ruiz', 'sebastian@email.com', 'Persona', true),
+            DemoUser('Laura Martínez', 'laura@email.com', 'Persona', false),
           ])
             Card(
               child: ListTile(
@@ -557,7 +646,9 @@ class AdminUsersScreen extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text(user.email),
-                trailing: const Chip(label: Text('Activo')),
+                trailing: Chip(
+                  label: Text(user.active ? 'Activo' : 'Inactivo'),
+                ),
               ),
             ),
         ],
@@ -587,7 +678,7 @@ class DictionaryManagementScreen extends StatelessWidget {
             child: ListTile(
               leading: const CircleAvatar(
                 backgroundColor: AppColors.paleBlue,
-                child: Text('🤟'),
+                child: Icon(Icons.sign_language, color: AppColors.blue),
               ),
               title: Text(
                 sign.term,

@@ -17,7 +17,14 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
-
+.env.local
+env.local
+.AGENTS.md
+.senasapp-f4226-firebase-adminsdk-fbsvc-24d1d23ca3.json
+.README.md
+.firebase.json
+*-firebase-adminsdk-*.json
+service-account*.json
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
