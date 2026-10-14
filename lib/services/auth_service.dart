@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_app_check_service.dart';
+import 'firebase_emulator_settings.dart';
+
 class AuthService {
   AuthService([this._auth]);
 
@@ -44,6 +47,7 @@ class AuthService {
       if (displayName != null && displayName.trim().isNotEmpty) {
         await credential.user?.updateDisplayName(displayName.trim());
       }
+      await credential.user?.sendEmailVerification();
       return credential;
     } on FirebaseAuthException catch (e) {
       throw getSpanishErrorMessage(e.code);
@@ -79,6 +83,68 @@ class AuthService {
     } catch (e) {
       if (e is String) rethrow;
       throw 'Ocurrió un error al enviar el correo de recuperación.';
+    }
+  }
+
+  /// Creates another Auth account without replacing the administrator's
+  /// active session, then lets the caller create its Firestore profile.
+  Future<void> createUserByAdmin({
+    required String email,
+    required String password,
+    required String displayName,
+    required Future<void> Function(String uid, String normalizedEmail)
+    onCreated,
+  }) async {
+    FirebaseApp? secondaryApp;
+    FirebaseAuth? secondaryAuth;
+    User? createdUser;
+    try {
+      secondaryApp = await Firebase.initializeApp(
+        name: 'senasapp-admin-${DateTime.now().microsecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      if (FirebaseEmulatorSettings.enabled) {
+        await secondaryAuth.useAuthEmulator(
+          FirebaseEmulatorSettings.host,
+          9099,
+        );
+      } else {
+        await activateFirebaseAppCheck(secondaryApp);
+      }
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      createdUser = credential.user;
+      if (createdUser == null) {
+        throw StateError('Firebase no devolvió la cuenta creada.');
+      }
+      await createdUser.updateDisplayName(displayName.trim());
+      await createdUser.sendEmailVerification();
+      await onCreated(createdUser.uid, email.trim().toLowerCase());
+    } on FirebaseAuthException catch (e) {
+      if (createdUser != null) {
+        try {
+          await createdUser.delete();
+        } catch (_) {
+          // Keep the original failure; the account may need console cleanup.
+        }
+      }
+      throw getSpanishErrorMessage(e.code);
+    } catch (e) {
+      if (createdUser != null) {
+        try {
+          await createdUser.delete();
+        } catch (_) {
+          // Keep the original failure; the account may need console cleanup.
+        }
+      }
+      if (e is String) rethrow;
+      throw 'No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.';
+    } finally {
+      if (secondaryAuth != null) await secondaryAuth.signOut();
+      if (secondaryApp != null) await secondaryApp.delete();
     }
   }
 

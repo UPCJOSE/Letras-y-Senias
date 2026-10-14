@@ -1,0 +1,20 @@
+{
+  "name": "senasapp-firebase-tools",
+  "private": true,
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "test": "node --test test/admin-helpers.test.cjs",
+    "test:rules": "firebase emulators:exec --config ../../firebase.json --only firestore --project demo-senasapp \"node --test test/firestore.rules.test.cjs\"",
+    "test:scripts": "firebase emulators:exec --config ../../firebase.json --only auth,firestore --project demo-senasapp \"node --test test/firebase-admin-scripts.test.cjs\"",
+    "emulators:start": "firebase emulators:start --config ../../firebase.json --only auth,firestore --project demo-senasapp",
+    "bootstrap:admin": "node scripts/bootstrap-admin.cjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.9.0",
+    "firebase-tools": "^14.27.0"
+  }
+}

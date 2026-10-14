@@ -40,7 +40,7 @@ void main() {
       expect(controller.isAuthLoading, isFalse);
       expect(controller.authError, isNull);
       expect(controller.userDisplayName, 'Usuario');
-      expect(controller.userEmail, 'invitado@senasapp.com');
+      expect(controller.userEmail, '');
     });
 
     test('limpia los errores de autenticación correctamente', () {

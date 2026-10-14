@@ -35,19 +35,29 @@ class SenasHeader extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.title,
     this.showBack = false,
+    this.backFallback = '/home',
     this.actions,
     this.leading,
   });
   final String? title;
   final bool showBack;
+  final String backFallback;
   final List<Widget>? actions;
   final Widget? leading;
   @override
   Size get preferredSize => const Size.fromHeight(68);
   @override
   Widget build(BuildContext context) => AppBar(
-    automaticallyImplyLeading: showBack,
-    leading: leading,
+    automaticallyImplyLeading: false,
+    leading:
+        leading ??
+        (showBack
+            ? IconButton(
+                tooltip: 'Volver',
+                onPressed: () => navigateBack(context, backFallback),
+                icon: const Icon(Icons.arrow_back),
+              )
+            : null),
     titleSpacing: showBack ? 0 : 20,
     title: Row(
       children: [
@@ -72,9 +82,22 @@ class SenasHeader extends StatelessWidget implements PreferredSizeWidget {
   );
 }
 
+void navigateBack(BuildContext context, String fallback) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go(fallback);
+  }
+}
+
 class AppBottomNav extends StatelessWidget {
-  const AppBottomNav({super.key, required this.index});
+  const AppBottomNav({
+    super.key,
+    required this.index,
+    this.onDestinationSelected,
+  });
   final int index;
+  final ValueChanged<int>? onDestinationSelected;
   @override
   Widget build(BuildContext context) => NavigationBar(
     selectedIndex: index,
@@ -102,20 +125,62 @@ class AppBottomNav extends StatelessWidget {
       ),
     ],
     onDestinationSelected: (value) {
+      if (onDestinationSelected != null) {
+        onDestinationSelected!(value);
+        return;
+      }
       const locations = ['/home', '/translate', '/dictionary', '/profile'];
       context.go(locations[value]);
     },
   );
 }
 
-class AvatarStage extends StatelessWidget {
-  const AvatarStage({super.key, this.height = 250, this.label = 'Avatar 2D'});
-  final double height;
-  final String label;
+void openTranslationDestination(BuildContext context, String route) {
+  if (route == '/translate') {
+    context.go(route);
+  } else if (GoRouterState.of(context).uri.path != route) {
+    context.push(route);
+  }
+}
+
+class TranslationNotice extends StatelessWidget {
+  const TranslationNotice(this.message, {super.key});
+
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(message!),
+        ),
+      ),
+    );
+  }
+}
+
+class FirebaseSignStage extends StatelessWidget {
+  const FirebaseSignStage({
+    required this.title,
+    required this.message,
+    this.icon = Icons.cloud_outlined,
+    super.key,
+  });
+
+  final String title;
+  final String message;
+  final IconData icon;
+
   @override
   Widget build(BuildContext context) => Container(
-    height: height,
+    height: 250,
     width: double.infinity,
+    padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFFE7F0FF), Color(0xFFF5F0FF)],
@@ -124,129 +189,25 @@ class AvatarStage extends StatelessWidget {
       ),
       borderRadius: BorderRadius.circular(24),
     ),
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          top: 14,
-          right: 14,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Text(
-                'DEMO',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.blue,
-                ),
-              ),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 54, color: AppColors.blue),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.blueDark,
+              fontWeight: FontWeight.w800,
             ),
           ),
-        ),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const AvatarIllustration(),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.blueDark,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-class AvatarIllustration extends StatelessWidget {
-  const AvatarIllustration({super.key, this.scale = 1, this.accentIcon});
-  final double scale;
-  final IconData? accentIcon;
-
-  @override
-  Widget build(BuildContext context) => Transform.scale(
-    scale: scale,
-    child: Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircleAvatar(
-              radius: 42,
-              backgroundColor: Color(0xFFFFCC80),
-              child: Icon(Icons.face_3, size: 62, color: AppColors.blueDark),
-            ),
-            Transform.translate(
-              offset: const Offset(0, -2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.sign_language,
-                    size: 42,
-                    color: AppColors.blueDark,
-                  ),
-                  Container(
-                    width: 92,
-                    height: 62,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.blue,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.sign_language,
-                    size: 42,
-                    color: AppColors.blueDark,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (accentIcon != null)
-          Positioned(
-            right: -18,
-            top: 4,
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white,
-              child: Icon(accentIcon, color: AppColors.blue, size: 20),
-            ),
-          ),
-      ],
-    ),
-  );
-}
-
-class MiniAvatar extends StatelessWidget {
-  const MiniAvatar({super.key});
-
-  @override
-  Widget build(BuildContext context) => const Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      CircleAvatar(
-        radius: 20,
-        backgroundColor: Color(0xFFFFCC80),
-        child: Icon(Icons.face_3, size: 28, color: AppColors.blueDark),
+          const SizedBox(height: 6),
+          Text(message, textAlign: TextAlign.center),
+        ],
       ),
-      Icon(Icons.sign_language, size: 28, color: AppColors.blueDark),
-    ],
+    ),
   );
 }
 
@@ -278,30 +239,44 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            backgroundColor: color.withValues(alpha: .12),
-            child: Icon(icon, color: color),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget build(BuildContext context) {
+    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+    final iconBadge = CircleAvatar(
+      radius: 18,
+      backgroundColor: color.withValues(alpha: .12),
+      child: Icon(icon, color: color, size: 20),
+    );
+    final metric = Text(
+      value,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(
+        context,
+      ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+    );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (largeText) ...[
+              iconBadge,
+              metric,
+            ] else
+              Row(children: [iconBadge, const Spacer(), metric]),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

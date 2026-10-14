@@ -4,7 +4,7 @@ Este archivo es la guía operativa para cualquier agente o desarrollador que tra
 
 ## 1. Descripción del producto
 
-SeñasApp es una aplicación móvil académica que busca facilitar la comunicación entre personas oyentes y la comunidad sorda colombiana. La aplicación recibe texto en español y presenta una secuencia controlada de señas de Lengua de Señas Colombiana (LSC) mediante un avatar 2D.
+SeñasApp es una aplicación móvil académica que busca facilitar la comunicación entre personas oyentes y la comunidad sorda colombiana. La aplicación recibe texto en español y consulta señas publicadas en Firestore. El piloto visual usa secuencias fotográficas del dataset LSC70 v2 alojadas en Cloudinary; no crea ni simula un avatar.
 
 El producto no debe presentarse como un intérprete certificado ni como un traductor automático completo de la gramática LSC. El MVP utiliza un diccionario controlado, coincidencias de palabras o frases, sugerencias ante errores y deletreo cuando no existe una seña disponible.
 
@@ -17,7 +17,7 @@ Orden de prioridad para decisiones visuales y funcionales:
 3. Los ajustes posteriores escritos para recuperar contraseña, historial, ajustes, Premium y panel administrativo.
 4. La presentación `SeñasApp(corregido).pptx` como contexto académico y de negocio.
 
-Cuando la presentación contradiga el mockup actualizado, prevalece Figma. En particular, el producto actualizado utiliza un avatar 2D y no videos de personas reales.
+Cuando la presentación contradiga el mockup actualizado, prevalece Figma. El usuario decidió que la app no debe usar catálogos, animaciones ni imágenes locales de prueba. La traducción consume exclusivamente señas publicadas en Firestore; el contenido visual deberá venir de una URL remota configurada, no de assets empaquetados.
 
 Decisión vigente del usuario: SeñasApp tiene únicamente los roles `individual` y `admin`. El rol empresarial y sus flujos quedan descartados aunque aparezcan en versiones anteriores de Figma o de la presentación (ver sección 16 para el registro detallado).
 
@@ -27,24 +27,17 @@ Enlace de referencia:
 
 ## 3. Alcance actual
 
-La fase actual cubre únicamente:
+La fase actual integra el reproductor LSC70 en traducción, deletreo, diccionario e historial. Firestore guarda metadatos y Cloudinary sirve fotogramas JPG por HTTPS. El piloto comprende Hola, Buenas (alias Bueno/Bien), Días, Tarde, Noche y A–Z más Ñ. El cargador firmado `tools/cloudinary/` lee el ZIP sin extraerlo, sube los recursos por API y genera el manifiesto que se importa desde el panel admin. No hay respaldo visual dentro de Flutter. Los audios quedan para después.
 
-- Vistas completas y coherentes con el mockup.
-- Navegación funcional entre pantallas.
-- Comportamientos visuales locales.
-- Datos de demostración para poder recorrer los flujos.
-- Validación visual en Chrome con apariencia móvil.
+Fuera del alcance de esta fase:
 
-Fuera del alcance actual:
-
-- Módulo empresarial y corporativo: gestión de empresas, licencias institucionales, importación masiva por Excel (.xlsx), métricas B2B y roles empresariales (`companyAdmin`).
-- Firestore, Storage, Functions y App Check.
-- Generación, carga o edición real de archivos Rive.
-- Pagos o suscripciones reales.
-- Permisos y guardas de seguridad definitivos.
-- Generación y firma del APK de entrega.
-
-No agregar estas integraciones hasta que el usuario indique expresamente que comienza su fase de conexión.
+- Módulo empresarial/corporativo, licencias institucionales, importación Excel y rol `companyAdmin`.
+- Cloud Functions e invitaciones. El primer administrador se configura una sola vez desde Firebase Console o la herramienta local; luego el admin puede crear cuentas desde la aplicación.
+- Audio, síntesis de voz y archivos de voz.
+- Carga de medios desde Flutter y cualquier secreto de Cloudinary dentro de Flutter, web, APK o Firebase.
+- Cobros o suscripciones reales.
+- Despliegue a producción, migración remota del catálogo y bootstrap del primer administrador sin autorización operativa expresa.
+- Firma del APK de entrega.
 
 ## 4. Estado implementado
 
@@ -54,16 +47,19 @@ No agregar estas integraciones hasta que el usuario indique expresamente que com
 - Arquitectura MVC ligera.
 - `provider` para estado compartido.
 - `go_router` para navegación.
-- Autenticación con Firebase Auth (correo y contraseña) para registro, inicio de sesión y recuperación, gestionada desde `AuthService` y coordinada por `AppController`.
+- Autenticación con Firebase Auth (correo/contraseña), recuperación, perfil Firestore y sesión. El rol se lee desde `users/{uid}.role`; no se usan custom claims.
+- Conexión opcional a Auth/Firestore Emulator, solo debug y con flag explícito.
 - Temas claro, oscuro y alto contraste.
-- 18 rutas navegables.
-- Catálogo local demostrativo de 36 términos.
-- Normalización de texto, coincidencia por frases, alias, sugerencias y deletreo local.
-- Pantallas para personas y administración global con datos simulados.
-- Nueve pruebas automatizadas.
-- Compilación web release verificada.
+- 17 rutas navegables.
+- Diccionario consultado exclusivamente desde Firestore; el seed local antiguo de 36 términos fue retirado.
+- Normalización que preserva Ñ, coincidencia por frases y alias, sugerencias y deletreo con letras publicadas.
+- Modelo opcional de medios LSC70, manifiesto administrativo con vista previa y reproductor de secuencias remotas sin fallback local.
+- Diccionario público, historial, preferencias, listado de personas y métricas conectados a Firestore.
+- Reglas e índices Firestore para acceso por dueño y administrador; no existe backend Cloud Functions.
+- Pruebas Flutter y pruebas de reglas con Firebase Emulator Suite.
+- La traducción no contiene un catálogo ni medios locales de respaldo. Solo reconoce señas activas y validadas en Firestore.
 
-El avatar que aparece actualmente es una representación visual construida con widgets de Flutter. Debe considerarse un marcador temporal hasta la futura integración de Rive.
+La pantalla informa cuando falta un medio remoto o falla la URL. La atribución, licencia y trazabilidad por participante se documentan en `docs/LSC70_CONTENT.md`. Firebase Storage no se utiliza; el proyecto permanece compatible con Spark.
 
 ## 5. Arquitectura
 
@@ -74,6 +70,10 @@ lib/
 ├── main.dart
 ├── controllers/
 │   └── app_controller.dart
+├── repositories/
+│   ├── user_repository.dart
+│   ├── sign_repository.dart
+│   └── translation_repository.dart
 ├── models/
 │   └── app_models.dart
 ├── routes/
@@ -102,7 +102,7 @@ Responsabilidades:
 - `theme`: colores, tipografía y estilos globales.
 - `shared/widgets`: componentes reutilizables.
 
-Las vistas no deben contener acceso directo a Firebase cuando se inicie la siguiente fase. Las futuras conexiones deben entrar por servicios y repositorios, coordinados desde controladores.
+Las vistas no deben acceder directamente a Firebase. La autenticación actual entra por `AuthService` y es coordinada desde `AppController`; las futuras conexiones deben conservar esta separación mediante servicios y repositorios.
 
 ## 6. Rutas actuales
 
@@ -110,11 +110,11 @@ Las vistas no deben contener acceso directo a Firebase cuando se inicie la sigui
 | --- | --- |
 | `/splash` | Presentación inicial de la marca |
 | `/onboarding` | Onboarding de tres pasos |
-| `/login` | Inicio de sesión y selector de rol demo |
+| `/login` | Inicio de sesión |
 | `/register` | Registro de una cuenta personal |
 | `/forgot-password` | Recuperación de contraseña |
 | `/home` | Inicio y accesos rápidos |
-| `/translate` | Traductor y reproducción del avatar |
+| `/translate` | Traducción consultando el diccionario de Firestore |
 | `/not-found` | Sugerencias para una palabra no encontrada |
 | `/spelling` | Deletreo letra por letra |
 | `/dictionary` | Diccionario y categorías |
@@ -125,9 +125,10 @@ Las vistas no deben contener acceso directo a Firebase cuando se inicie la sigui
 | `/admin` | Dashboard administrador |
 | `/admin/users` | Gestión de personas registradas |
 | `/admin/dictionary` | Gestión del diccionario |
-| `/admin/avatar-editor` | Editor demostrativo del avatar |
 
-### Rutas descartadas (Módulo empresarial eliminado)
+### Rutas descartadas
+
+La ruta `/admin/avatar-editor` se retiró porque sus controles eran locales y no generaban ni reproducían animaciones reales. No volver a enlazar ese prototipo.
 
 Las siguientes rutas pertenecían a la versión anterior con rol de empresa y fueron retiradas formalmente de `lib/routes/app_router.dart`:
 
@@ -169,21 +170,25 @@ Los tokens de color y el tema viven en `lib/theme/app_theme.dart`. No duplicar c
 ## 8. Reglas funcionales del prototipo
 
 - Premium es únicamente informativo y no cambia el plan del usuario.
-- El selector de rol del login existe para navegar por la demostración y solo alterna entre `Persona` (`individual`) y `Admin` (`admin`).
-- Los formularios no crean cuentas reales todavía.
-- El editor de avatar modifica controles locales, pero no genera animaciones.
+- El login no permite seleccionar roles. El rol se lee de `users/{uid}.role` en Firestore; una persona no puede cambiar su propio rol. Un administrador autenticado puede crear cuentas `individual` o `admin` desde Gestión de personas.
+- Registro personal, inicio/cierre de sesión, recuperación, perfil y preferencias usan Firebase Auth/Firestore.
 - El dashboard administrador tampoco debe contener una acción llamada “Estadísticas”.
 - La aplicación reconoce únicamente los roles `individual` y `admin`. Queda prohibido reintroducir `companyAdmin` o figuras corporativas.
 - El registro público crea exclusivamente cuentas personales (`/register`); no contiene selectores de tipo de cuenta ni campos para empresa. El rol administrador no se puede seleccionar allí.
 - El perfil del usuario (`/profile`) no muestra opciones ni enlaces a paneles empresariales.
-- El administrador gestiona personas registradas (`/admin/users`), diccionario, categorías y metadatos del avatar. No administra organizaciones, cupos ni empresas.
+- El administrador consulta las personas registradas (`/admin/users`), crea cuentas personales o administrativas y gestiona el diccionario y sus categorías. No administra organizaciones, cupos ni empresas.
 - El dashboard administrador (`/admin`) presenta métricas de personas registradas y traducciones globales; no incluye tarjetas de empresas ni gestión institucional.
 - La importación masiva de usuarios vía Excel (.xlsx) está descartada del prototipo.
 - El onboarding (`/onboarding`) no hace alusión a empresas o instituciones.
-- Toda función no conectada debe comunicar claramente que es una demostración y nunca simular silenciosamente una escritura real.
-- El historial demostrativo conserva siete entradas agrupadas por fecha.
-- El panel administrador utiliza un menú lateral deslizable además de sus accesos rápidos.
-- El menú lateral debe cerrarse antes de navegar y sus destinos secundarios deben conservar el regreso al panel administrador.
+- No usar perfiles, métricas, traducciones ni usuarios ficticios como fallback silencioso. Mostrar estados vacíos, carga o error.
+- El historial guarda la entrada y señas resueltas por Firestore, por usuario autenticado. Invitados no escriben datos remotos.
+- Las 36 entradas iniciales se importan únicamente como `draft`, `active: false` y `validated: false`; el diccionario público muestra solo señas activas validadas.
+- No hay invitaciones. Un administrador autenticado puede crear cuentas `individual` y `admin`; el alta no cambia la sesión actual.
+- Para probar Auth/Firestore sin tocar el proyecto real, usar `USE_FIREBASE_EMULATORS=true` en debug. En release este modo falla de forma cerrada.
+- App Check está configurado en cliente para web/Android; sus claves de proveedor y enforcement requieren preparación explícita en Firebase Console.
+- El panel administrador no usa menú lateral: presenta las métricas y los accesos directos a personas y diccionario. Las categorías se gestionan desde el diccionario y Premium se consulta desde Perfil.
+- Gestión del diccionario permite validar en lote las señas pendientes que tengan un medio LSC70 utilizable. Requiere confirmación expresa de revisión LSC; no publica borradores sin recurso visual ni verifica lingüísticamente las señas por sí sola.
+- Las pantallas secundarias de administración deben conservar el regreso al panel; la cabecera del panel permite volver al Perfil incluso al abrir `/admin` directamente.
 
 ## 9. Motor local de traducción
 
@@ -201,20 +206,42 @@ Comportamiento actual:
 
 No añadir Gemini ni otro modelo generativo durante la fase de vistas. No describir este motor como traducción gramatical completa a LSC.
 
-## 10. Futuras conexiones previstas
+## 10. Medios visuales LSC70 y siguiente fase
 
-Cuando el usuario autorice la fase de integración, la arquitectura deberá admitir:
+### Decisión vigente: secuencias originales LSC70 en Cloudinary
 
-- Firebase Auth para correo y contraseña.
-- Roles `individual` y `admin`.
-- Colecciones `users`, `categories`, `signs` y `translations`.
-- Historial real por usuario.
-- Reglas que impidan el escalamiento del rol `individual` a `admin`.
-- Avatar base en `assets/rive/avatar.riv` con una `animationKey` por seña.
-- No crear colecciones ni modelos en Firestore para empresas (`companies`, `organizations`, `licenses`).
-- No diseñar esquemas multi-inquilino (multi-tenant) ni esquemas de licencias institucionales.
+No crear avatar. Usar las fotografías originales de LSC70 v2, sin archivos multimedia locales. Cloudinary sirve los JPG; Firestore mantiene las URL y metadatos.
 
-El rol `admin` nunca debe estar disponible en el registro público.
+#### Alternativas externas exploradas
+
+Se revisaron las plataformas sugeridas para evitar crear el personaje desde cero. Ninguna se integra actualmente como reproductor de SeñasApp:
+
+| Opción | Hallazgo | Decisión para SeñasApp |
+| --- | --- | --- |
+| [Sign.mt / Rylo Translate](https://sign.mt/) | La interfaz pública muestra inglés, alemán y francés y el proyecto describe una cadena de texto a SignWriting/poses/video. Su documentación advierte que el enfoque de glosas no expresa toda la gramática de una lengua de señas; los modelos más recientes aparecen como vista previa de investigación no disponible al público. No se encontró soporte LSC ni un SDK Flutter listo para integrar. | No usar como motor LSC ni como dependencia del MVP. Puede servir para investigación académica, no como contenido validado. |
+| [Hand Talk](https://api-docs.handtalk.me/v1/en/introduction) | El SDK documentado ofrece Libras y ASL, no LSC; es JavaScript/WebGL y necesita un token de acceso recibido mediante contrato. El hecho de que la app de consumo sea gratuita no hace gratuita ni integrable su API para este proyecto. | Descartar para el MVP por idioma, plataforma y acceso. |
+| [SignLanguageAI.com](https://www.signlanguageai.com/) | La herramienta pública se centra en ASL e inglés y ofrece una secuencia de palabras/diccionario desde su propio sitio. No se encontró un SDK o API pública para incorporarla a Flutter ni soporte de LSC. | Útil solo como referencia de experiencia de usuario; no integrar ni reutilizar sus señas. |
+| [Viggle](https://viggle.ai/pricing) | El plan web gratuito anuncia hasta cinco videos diarios; es una herramienta de generación/transferencia de movimiento, no de traducción. Su API es un flujo aparte con créditos iniciales, trabajos asíncronos y almacenamiento propio de los resultados. La transferencia visual no certifica la precisión de manos, expresiones ni significado lingüístico. | Se puede probar únicamente para producir clips piloto fuera de la app, con material propio o con permiso y revisión competente en LSC. No depender de su API ni presentar clips como traducción correcta sin validar. |
+| [Dataset LSC70 v2](https://data.mendeley.com/datasets/9ssyn8tff5/2) | LSC70W incluye `Hello`, `Good`, `Days`, `Afternoon` y `Night`; LSC70AN incluye 27 letras con Ñ. Licencia CC BY 4.0. | Integrado en la app para secuencias remotas Cloudinary; `tools/cloudinary/` sube el piloto con API firmada y entrega el manifiesto para importación como borrador. |
+| Diccionario y videos públicos de [INSOR](https://educativo.insor.gov.co/diccionario/) | Es una fuente de consulta de LSC; que un video sea público no implica automáticamente permiso para descargarlo, modificarlo o redistribuirlo dentro de la app. | Usar como referencia y solicitar permiso antes de incorporar sus archivos. |
+
+El contrato del reproductor y la importación se describen en `docs/LSC70_CONTENT.md`. Atribución: Muñoz Galindez, Villota Coral y Vargas Cañas, *Data in Brief* 58 (2025), CC BY 4.0, DOI `10.1016/j.dib.2024.111213`; dataset DOI `10.17632/9ssyn8tff5.2`. El artículo y la licencia no reemplazan la revisión competente de LSC.
+
+#### Guardado de señas generadas o consultadas
+
+- No generar ni guardar automáticamente un clip distinto por cada texto de usuario en el servidor: una API externa puede costar, cambiar o fallar y no hay un generador LSC verificado disponible para el MVP.
+- No incluir clips, fotogramas ni avatares de prueba dentro de `assets/`.
+- No presentar controles de reproducción si el documento de Firestore no tiene un recurso remoto utilizable.
+- Firebase Cloud Storage requiere Blaze y no está disponible bajo Spark. Mientras el proyecto siga en Spark, cualquier recurso multimedia debe alojarse en un servicio remoto ya aprobado por el usuario; no inventar una URL ni subir contenido a terceros.
+
+Estado de la fase visual:
+
+1. El cliente consulta señas `validated` y `active` desde Firestore; las letras usan `kind: letter`.
+2. El utilitario Node local sube el piloto con credenciales de `tools/cloudinary/.env` (ignorado por Git) y genera el manifiesto; el administrador lo revisa/importa. Documentos nuevos quedan como borradores y los existentes solo reciben `media`.
+3. El reproductor ordena los fotogramas, reproduce solo por acción, permite pausa/reinicio/velocidad y detiene recursos al salir. No hay fallback local.
+4. No publicar una seña hasta documentar participante, fuente, licencia y revisión competente.
+
+La síntesis de voz en español queda para otra fase; no generar ni almacenar audios.
 
 ## 11. Comandos del proyecto
 
@@ -230,7 +257,15 @@ C:\Users\garav\development\flutter\bin\flutter.bat run -d chrome
 C:\Users\garav\development\flutter\bin\flutter.bat analyze
 C:\Users\garav\development\flutter\bin\flutter.bat test
 C:\Users\garav\development\flutter\bin\flutter.bat build web --release
+npm --prefix tools/firebase install
+npm --prefix tools/firebase test
+npm --prefix tools/firebase run test:rules
+npm --prefix tools/firebase run test:scripts
+npm --prefix tools/firebase run emulators:start
+C:\Users\garav\development\flutter\bin\flutter.bat run -d chrome --dart-define=USE_FIREBASE_EMULATORS=true
 ```
+
+La configuración del proyecto Firebase se encuentra en `firebase.json`. App Check para Chrome en desarrollo usa un token de depuración que debe registrarse en Firebase Console; en release web se pasa `--dart-define=FIREBASE_WEB_RECAPTCHA_SITE_KEY=...`.
 
 Antes de entregar cambios se debe ejecutar, como mínimo:
 
@@ -242,7 +277,8 @@ Antes de entregar cambios se debe ejecutar, como mínimo:
 
 Las pruebas actuales están en `test/`.
 
-- Mantener pruebas para normalización, coincidencias, sugerencias y deletreo.
+- Mantener pruebas para normalización, coincidencias, sugerencias y deletreo con fixtures explícitos; no usar un catálogo local de fallback.
+- Ejecutar `npm --prefix tools/firebase run test:rules` para verificar privacidad, roles, catálogo e historial con Firestore Emulator.
 - Agregar una prueba de widget cuando una modificación cambie un flujo importante.
 - No corregir una prueba eliminándola sin justificar por qué dejó de representar el comportamiento esperado.
 - Revisar desbordamientos a 390 × 844 y también en ventanas de menor altura.
@@ -269,8 +305,8 @@ Una vista se considera terminada cuando:
 - Respeta el mockup y los tokens visuales existentes.
 - Se adapta al lienzo móvil sin overflow.
 - Tiene navegación de entrada y salida.
-- Presenta estados normales, vacíos y de demostración cuando correspondan.
-- No depende todavía de una conexión externa.
+- Presenta estados normales, vacíos y errores con información clara; no incluir modos o datos de demostración en la app.
+- No introduce conexiones externas adicionales a Firebase Auth sin autorización.
 - `flutter analyze` no reporta problemas.
 - Las pruebas existentes continúan aprobando.
 - Fue revisada visualmente en Chrome.
@@ -281,7 +317,8 @@ Consultar antes de:
 
 - Cambiar la identidad visual o apartarse de Figma.
 - Eliminar o fusionar pantallas existentes.
-- Comenzar Firebase, Rive, pagos o importación real.
+- Desplegar rules o índices a Firebase; escribir datos del catálogo en un proyecto remoto; ejecutar el bootstrap administrativo.
+- Integrar el runtime de animación elegido, síntesis de voz, almacenamiento de medios o pagos reales.
 - Modificar el modelo de roles.
 - Crear repositorios remotos o publicar el código.
 - Crear commits o modificar el historial de Git.
@@ -306,11 +343,11 @@ Se tomó la decisión firme de descartar por completo este modelo para enfocar S
 
 2. **Enrutamiento (`lib/routes/app_router.dart`)**:
    - Se eliminaron formalmente las 4 rutas empresariales: `/company`, `/company/users`, `/company/import` y `/admin/company-users`.
-   - El enrutador quedó consolidado en 18 rutas principales.
+    - El enrutador quedó consolidado en 17 rutas principales.
 
 3. **Flujos de acceso y autenticación (`lib/views/access_screens.dart`)**:
-   - `OnboardingScreen`: La tercera pantalla ("Úsala como persona o institución / Conecta usuarios, empresas y servicios...") fue sustituida por "Una herramienta para comunicar y aprender / Consulta el diccionario, reproduce señas y guarda tus traducciones recientes".
-   - `LoginScreen`: Se eliminó la opción `Empresa` del selector demostrativo de roles.
+   - `OnboardingScreen`: La tercera pantalla ("Úsala como persona o institución / Conecta usuarios, empresas y servicios...") fue sustituida por "Una herramienta para comunicar y aprender / Consulta el diccionario y guarda tus traducciones recientes".
+   - `LoginScreen`: Se eliminó la opción `Empresa` del selector de roles.
    - `RegisterScreen`: Se removió el selector de tipo de cuenta y el campo "Nombre de la empresa". Toda cuenta creada en el flujo público es de tipo personal.
 
 4. **Flujos de perfil (`lib/views/profile_screens.dart`)**:
@@ -320,8 +357,8 @@ Se tomó la decisión firme de descartar por completo este modelo para enfocar S
    - `AdminDashboardScreen`: Se sustituyó la tarjeta de estadística "Empresas (18)" por "Traducciones (4.860)". Se renombró "Usuarios (1.284)" a "Personas (1.284)". El acceso rápido "Gestionar usuarios (Empresas e individuales)" cambió a "Gestionar personas (Personas registradas)".
    - `AdminUsersScreen`: Se retiró por completo la sección de empresas asociadas (`Clínica Erasmo Ltda.`, `Banco de Bogotá`, `Colegio San Ignacio`) y ahora lista únicamente personas individuales.
 
-### 16.3. Directrices para agentes sobre código residual
+### 16.3. Limpieza del código residual
 
-- En `lib/views/management_screens.dart`, las clases `CompanyDashboardScreen`, `CompanyUsersScreen` e `ImportUsersScreen` quedaron huérfanas al retirarse sus rutas. Queda registrado que no forman parte de la arquitectura activa y ningún agente o desarrollador debe reincorporarlas ni enlazarlas.
-- En la documentación de apoyo (`README.md` y `CONTRIBUTING.md`), cualquier mención remanente a "empresa" o a ramas de trabajo como `feature/company-users` corresponde a vestigios históricos que deben considerarse obsoletos y alinearse con esta directiva.
-
+- Se eliminaron de `lib/views/management_screens.dart` las clases huérfanas `CompanyDashboardScreen`, `CompanyUsersScreen` e `ImportUsersScreen`, junto con sus datos y componentes auxiliares.
+- `CONTRIBUTING.md` ya no propone ramas ni tareas relacionadas con empresas o importación masiva.
+- Ningún agente o desarrollador debe reincorporar estos flujos ni añadir nuevos enlaces, modelos o rutas corporativas.

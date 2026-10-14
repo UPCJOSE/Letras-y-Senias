@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
-import '../models/app_models.dart';
 import '../shared/widgets/app_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -88,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _pages = [
     (
       'Traduce texto a Lengua de Señas Colombiana',
-      'Escribe una palabra o frase y nuestro avatar 2D la interpretará.',
+      'Escribe una palabra o frase para consultar las señas disponibles.',
       Icons.sign_language,
     ),
     (
@@ -98,7 +97,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     (
       'Una herramienta para comunicar y aprender',
-      'Consulta el diccionario, reproduce señas y guarda tus traducciones recientes.',
+      'Consulta el diccionario y guarda tus traducciones recientes.',
       Icons.menu_book_outlined,
     ),
   ];
@@ -138,10 +137,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                             borderRadius: BorderRadius.circular(36),
                           ),
-                          child: AvatarIllustration(
-                            scale: .72,
-                            accentIcon: item.$3,
-                          ),
+                          child: Icon(item.$3, size: 78, color: AppColors.blue),
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -156,9 +152,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             height: 1.5,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -227,6 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+    final requestedDestination = GoRouterState.of(
+      context,
+    ).uri.queryParameters['from'];
     final controller = context.read<AppController>();
     final success = await controller.login(
       email: _emailController.text,
@@ -240,13 +239,13 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppColors.green,
         ),
       );
-      context.go('/home');
+      context.go(
+        requestedDestination ?? (controller.isAdmin ? '/admin' : '/home'),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            controller.authError ?? 'Error al iniciar sesión.',
-          ),
+          content: Text(controller.authError ?? 'Error al iniciar sesión.'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -375,40 +374,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Vista de demostración',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Cambia de rol para revisar la demostración.',
-                        ),
-                        const SizedBox(height: 10),
-                        SegmentedButton<AppRole>(
-                          segments: const [
-                            ButtonSegment(
-                              value: AppRole.individual,
-                              label: Text('Persona'),
-                            ),
-                            ButtonSegment(
-                              value: AppRole.admin,
-                              label: Text('Admin'),
-                            ),
-                          ],
-                          selected: {controller.role},
-                          onSelectionChanged: (value) =>
-                              controller.setRole(value.first),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -454,7 +419,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('¡Cuenta registrada exitosamente en Firebase!'),
+          content: Text(
+            'Cuenta creada. Revisa tu correo para verificarlo; puedes usar la app mientras tanto.',
+          ),
           backgroundColor: AppColors.green,
         ),
       );
@@ -478,7 +445,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return MobileCanvas(
       child: Scaffold(
-        appBar: const SenasHeader(title: 'Crear cuenta', showBack: true),
+        appBar: const SenasHeader(
+          title: 'Crear cuenta',
+          showBack: true,
+          backFallback: '/login',
+        ),
         body: Form(
           key: _formKey,
           child: ListView(
@@ -642,7 +613,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            controller.authError ?? 'Error al enviar el correo de recuperación.',
+            controller.authError ??
+                'Error al enviar el correo de recuperación.',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
@@ -657,8 +629,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return MobileCanvas(
       child: Scaffold(
-        appBar: const SenasHeader(title: 'Recuperar contraseña', showBack: true),
-        body: Padding(
+        appBar: const SenasHeader(
+          title: 'Recuperar contraseña',
+          showBack: true,
+          backFallback: '/login',
+        ),
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -683,7 +659,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               Text(
                 sent
                     ? 'Revisa tu bandeja de entrada en ${_emailController.text}. Hemos enviado el enlace para restablecer tu contraseña.'
-                    : 'Ingresa tu correo electrónico y te enviaremos un enlace oficial de Firebase para restablecer tu contraseña.',
+                    : 'Ingresa tu correo electrónico y te enviaremos un enlace seguro para restablecer tu contraseña.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -715,7 +691,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ],
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () => context.pop(),
+                onPressed: () => navigateBack(context, '/login'),
                 child: const Text('Volver a iniciar sesión'),
               ),
             ],
@@ -725,4 +701,3 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 }
-

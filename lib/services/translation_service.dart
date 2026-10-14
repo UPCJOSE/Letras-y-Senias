@@ -4,7 +4,7 @@ import '../models/app_models.dart';
 
 class TranslationService {
   TranslationService({List<SignEntry>? catalog})
-    : catalog = catalog ?? demoCatalog;
+    : catalog = catalog ?? const [];
   final List<SignEntry> catalog;
 
   TranslationResult translate(String input) {
@@ -14,6 +14,8 @@ class TranslationService {
     final missing = <String>[];
     final spelling = <String>[];
     final suggestions = <SignSuggestion>[];
+    final sequence = <TranslationReference>[];
+    final sequenceEntries = <SignEntry?>[];
     var index = 0;
     while (index < words.length) {
       SignEntry? match;
@@ -28,12 +30,22 @@ class TranslationService {
       }
       if (match != null) {
         signs.add(match);
+        sequence.add(
+          TranslationReference(
+            label: match.term,
+            kind: SignKind.word,
+            signId: match.id,
+            animationKey: match.animationKey,
+          ),
+        );
+        sequenceEntries.add(match);
         index += consumed;
         continue;
       }
       final word = words[index];
       final ranked =
           catalog
+              .where((sign) => sign.kind == SignKind.word)
               .map(
                 (sign) => SignSuggestion(
                   sign.term,
@@ -47,7 +59,20 @@ class TranslationService {
         suggestions.addAll(ranked.take(3));
       } else {
         missing.add(word);
-        spelling.addAll(word.toUpperCase().split(''));
+        final letters = word.toUpperCase().split('');
+        spelling.addAll(letters);
+        for (final letter in letters) {
+          final letterSign = _letter(letter);
+          sequence.add(
+            TranslationReference(
+              label: letter,
+              kind: SignKind.letter,
+              signId: letterSign?.id,
+              animationKey: letterSign?.animationKey ?? '',
+            ),
+          );
+          sequenceEntries.add(letterSign);
+        }
       }
       index++;
     }
@@ -58,13 +83,30 @@ class TranslationService {
       missingWords: missing,
       spelling: spelling,
       suggestions: _uniqueSuggestions(suggestions),
+      sequence: sequence,
+      sequenceEntries: sequenceEntries,
     );
   }
 
+  TranslationService withCatalog(List<SignEntry> signs) =>
+      TranslationService(catalog: signs);
+
   SignEntry? _exact(String candidate) {
     for (final sign in catalog) {
+      if (sign.kind != SignKind.word) continue;
       if (normalize(sign.term) == candidate ||
           sign.aliases.any((alias) => normalize(alias) == candidate)) {
+        return sign;
+      }
+    }
+    return null;
+  }
+
+  SignEntry? _letter(String letter) {
+    for (final sign in catalog) {
+      if (sign.kind == SignKind.letter &&
+          (sign.term.toUpperCase() == letter ||
+              sign.animationKey.toUpperCase() == letter)) {
         return sign;
       }
     }
@@ -80,14 +122,13 @@ class TranslationService {
       'ó': 'o',
       'ú': 'u',
       'ü': 'u',
-      'ñ': 'n',
     };
     accents.forEach(
       (key, replacement) => result = result.replaceAll(key, replacement),
     );
-    result = result.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
+    result = result.replaceAll(RegExp(r'[^a-zñ0-9\s]'), ' ');
     result = result.replaceAllMapped(
-      RegExp(r'([a-z])\1{2,}'),
+      RegExp(r'([a-zñ])\1{2,}'),
       (match) => match.group(1)!,
     );
     return result.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -129,82 +170,3 @@ class TranslationService {
     return result.take(3).toList();
   }
 }
-
-const demoCatalog = <SignEntry>[
-  SignEntry(
-    term: 'Hola',
-    category: 'Saludos',
-    animationKey: 'hola',
-    validated: true,
-  ),
-  SignEntry(term: 'Gracias', category: 'Saludos', animationKey: 'gracias'),
-  SignEntry(term: 'Por favor', category: 'Saludos', animationKey: 'por_favor'),
-  SignEntry(term: 'Adiós', category: 'Saludos', animationKey: 'adios'),
-  SignEntry(
-    term: 'Buenos días',
-    category: 'Saludos',
-    animationKey: 'buenos_dias',
-  ),
-  SignEntry(term: 'Ayuda', category: 'Emergencias', animationKey: 'ayuda'),
-  SignEntry(
-    term: 'Emergencia',
-    category: 'Emergencias',
-    animationKey: 'emergencia',
-  ),
-  SignEntry(term: 'Policía', category: 'Emergencias', animationKey: 'policia'),
-  SignEntry(term: 'Peligro', category: 'Emergencias', animationKey: 'peligro'),
-  SignEntry(term: 'Hospital', category: 'Salud', animationKey: 'hospital'),
-  SignEntry(
-    term: 'Médico',
-    category: 'Salud',
-    animationKey: 'medico',
-    aliases: ['doctor'],
-  ),
-  SignEntry(term: 'Dolor', category: 'Salud', animationKey: 'dolor'),
-  SignEntry(term: 'Cita', category: 'Salud', animationKey: 'cita'),
-  SignEntry(
-    term: 'Medicamento',
-    category: 'Salud',
-    animationKey: 'medicamento',
-  ),
-  SignEntry(term: 'Colegio', category: 'Educación', animationKey: 'colegio'),
-  SignEntry(term: 'Profesor', category: 'Educación', animationKey: 'profesor'),
-  SignEntry(
-    term: 'Estudiante',
-    category: 'Educación',
-    animationKey: 'estudiante',
-  ),
-  SignEntry(term: 'Libro', category: 'Educación', animationKey: 'libro'),
-  SignEntry(term: 'Aprender', category: 'Educación', animationKey: 'aprender'),
-  SignEntry(term: 'Banco', category: 'Servicios', animationKey: 'banco'),
-  SignEntry(term: 'Dinero', category: 'Servicios', animationKey: 'dinero'),
-  SignEntry(
-    term: 'Documento',
-    category: 'Servicios',
-    animationKey: 'documento',
-  ),
-  SignEntry(term: 'Baño', category: 'Servicios', animationKey: 'bano'),
-  SignEntry(term: 'Bus', category: 'Transporte', animationKey: 'bus'),
-  SignEntry(term: 'Taxi', category: 'Transporte', animationKey: 'taxi'),
-  SignEntry(term: 'Carro', category: 'Transporte', animationKey: 'carro'),
-  SignEntry(term: 'Casa', category: 'Familia', animationKey: 'casa'),
-  SignEntry(term: 'Mamá', category: 'Familia', animationKey: 'mama'),
-  SignEntry(term: 'Papá', category: 'Familia', animationKey: 'papa'),
-  SignEntry(term: 'Amigo', category: 'Familia', animationKey: 'amigo'),
-  SignEntry(
-    term: 'Necesitar',
-    category: 'Verbos',
-    animationKey: 'necesitar',
-    aliases: ['necesito'],
-  ),
-  SignEntry(
-    term: 'Querer',
-    category: 'Verbos',
-    animationKey: 'querer',
-    aliases: ['quiero'],
-  ),
-  SignEntry(term: 'Ir', category: 'Verbos', animationKey: 'ir'),
-  SignEntry(term: 'Comer', category: 'Alimentos', animationKey: 'comer'),
-  SignEntry(term: 'Agua', category: 'Alimentos', animationKey: 'agua'),
-  SignEntry(term: 'Comida', category: 'Alimentos', animationKey: 'comida'),
-];

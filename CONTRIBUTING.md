@@ -27,7 +27,7 @@ Cada integrante debe trabajar desde su propia cuenta de GitHub. No se deben comp
 | --- | --- | --- |
 | Integrante 1 | `feature/auth-validation` | Validaciones y mensajes de Login, Registro y Recuperar contraseña |
 | Integrante 2 | `feature/dictionary-filters` | Búsqueda, categorías y estados vacíos del diccionario |
-| Integrante 3 | `feature/company-users` | Formularios, validación de usuarios y vista previa de importación |
+| Integrante 3 | `feature/profile-history` | Perfil, ajustes, historial y estados vacíos |
 | Integrante 4 | `feature/accessibility-qa` | Pruebas de tamaños, contraste, textos y navegación en Chrome |
 
 No se debe asignar a una persona una rama ya terminada únicamente para que la vuelva a confirmar. Su commit debe contener un cambio verificable propio.

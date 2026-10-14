@@ -21,8 +21,9 @@ abstract final class AppTheme {
       surface: Colors.white,
       contrastLevel: highContrast ? 1 : 0,
     );
-    return _base(scheme)
-        .copyWith(scaffoldBackgroundColor: AppColors.background);
+    return _base(
+      scheme,
+    ).copyWith(scaffoldBackgroundColor: AppColors.background);
   }
 
   static ThemeData dark({bool highContrast = false}) {
@@ -31,8 +32,9 @@ abstract final class AppTheme {
       brightness: Brightness.dark,
       contrastLevel: highContrast ? 1 : 0,
     );
-    return _base(scheme)
-        .copyWith(scaffoldBackgroundColor: const Color(0xFF0E1726));
+    return _base(
+      scheme,
+    ).copyWith(scaffoldBackgroundColor: const Color(0xFF0E1726));
   }
 
   static ThemeData _base(ColorScheme scheme) {

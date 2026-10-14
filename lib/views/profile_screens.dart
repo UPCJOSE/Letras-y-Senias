@@ -23,93 +23,93 @@ class ProfileScreen extends StatelessWidget {
         .map((p) => p[0].toUpperCase())
         .join();
 
-    return MobileCanvas(
-      child: Scaffold(
-        appBar: const SenasHeader(title: 'Perfil'),
-        bottomNavigationBar: const AppBottomNav(index: 3),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 34,
-                      backgroundColor: AppColors.paleBlue,
-                      child: Text(
-                        initials.isEmpty ? 'U' : initials,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.blue,
+    return Scaffold(
+      appBar: const SenasHeader(title: 'Perfil'),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 34,
+                    backgroundColor: AppColors.paleBlue,
+                    child: Text(
+                      initials.isEmpty ? 'U' : initials,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: Theme.of(context).textTheme.titleLarge,
+                        Text(email),
+                        const SizedBox(height: 6),
+                        Chip(
+                          label: Text(
+                            role == AppRole.admin
+                                ? 'Administrador'
+                                : 'Plan gratuito',
                           ),
-                          Text(email),
-                          const SizedBox(height: 6),
-                          Chip(
-                            label: Text(
-                              role == AppRole.admin
-                                  ? 'Administrador'
-                                  : 'Plan gratuito',
-                            ),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 18),
+          ),
+          const SizedBox(height: 18),
+          _ProfileTile(
+            Icons.history,
+            'Historial de traducciones',
+            'Revisa y reproduce tus consultas',
+            () => context.push('/history'),
+          ),
+          _ProfileTile(
+            Icons.workspace_premium_outlined,
+            'Plan Premium',
+            '50 palabras vs. 200+ señas',
+            () => context.push('/premium'),
+          ),
+          _ProfileTile(
+            Icons.settings_outlined,
+            'Ajustes',
+            'Tema, accesibilidad y reproducción',
+            () => context.push('/settings'),
+          ),
+          if (role == AppRole.admin)
             _ProfileTile(
-              Icons.history,
-              'Historial de traducciones',
-              'Revisa y reproduce tus consultas',
-              () => context.push('/history'),
+              Icons.admin_panel_settings_outlined,
+              'Panel administrador',
+              'Gestión global de SeñasApp',
+              () => context.go('/admin'),
             ),
-            _ProfileTile(
-              Icons.workspace_premium_outlined,
-              'Plan Premium',
-              '50 palabras vs. 200+ señas',
-              () => context.push('/premium'),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await controller.logout();
+              if (context.mounted) context.go('/login');
+            },
+            icon: const Icon(Icons.logout),
+            label: const Text('Cerrar sesión'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            _ProfileTile(
-              Icons.settings_outlined,
-              'Ajustes',
-              'Tema, accesibilidad y reproducción',
-              () => context.push('/settings'),
-            ),
-            if (role == AppRole.admin)
-              _ProfileTile(
-                Icons.admin_panel_settings_outlined,
-                'Panel administrador',
-                'Gestión global de SeñasApp',
-                () => context.go('/admin'),
-              ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => context.go('/login'),
-              icon: const Icon(Icons.logout),
-              label: const Text('Cerrar sesión'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -148,12 +148,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppController>();
-    final items = controller.history
-        .where((item) => item.text.toLowerCase().contains(query.toLowerCase()))
-        .toList();
     return MobileCanvas(
       child: Scaffold(
-        appBar: const SenasHeader(title: 'Historial', showBack: true),
+        appBar: const SenasHeader(
+          title: 'Historial',
+          showBack: true,
+          backFallback: '/profile',
+        ),
         body: Column(
           children: [
             Padding(
@@ -167,59 +168,90 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
             Expanded(
-              child: items.isEmpty
-                  ? const Center(
-                      child: Text('No hay traducciones que coincidan.'),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: items.length,
-                      itemBuilder: (_, index) {
-                        final item = items[index];
-                        final group = item.label.split(',').first;
-                        final previousGroup = index == 0
-                            ? null
-                            : items[index - 1].label.split(',').first;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (group != previousGroup) ...[
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: index == 0 ? 0 : 16,
-                                  bottom: 8,
-                                ),
-                                child: Text(
-                                  group,
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w800),
-                                ),
+              child: StreamBuilder(
+                stream: controller.history,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Text('No se pudo cargar tu historial.'),
+                    );
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final items = snapshot.data!
+                      .where(
+                        (item) => item.text.toLowerCase().contains(
+                          query.toLowerCase(),
+                        ),
+                      )
+                      .toList();
+                  if (items.isEmpty) {
+                    return Center(
+                      child: Text(
+                        controller.isAuthenticated
+                            ? 'Aún no tienes traducciones guardadas.'
+                            : 'Inicia sesión para consultar tu historial.',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    itemCount: items.length,
+                    itemBuilder: (_, index) {
+                      final item = items[index];
+                      final group = item.label.split(',').first;
+                      final previousGroup = index == 0
+                          ? null
+                          : items[index - 1].label.split(',').first;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (group != previousGroup) ...[
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: index == 0 ? 0 : 16,
+                                bottom: 8,
                               ),
-                            ],
-                            Card(
-                              child: ListTile(
-                                minTileHeight: 76,
-                                title: Text(
-                                  item.text,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${item.label.contains(',') ? item.label.split(',').skip(1).join(',').trim() : item.label} · ${item.signCount} señas',
-                                ),
-                                trailing: IconButton.filledTonal(
-                                  onPressed: () => context.go(
-                                    controller.translateRoute(item.text),
-                                  ),
-                                  icon: const Icon(Icons.play_arrow),
-                                ),
+                              child: Text(
+                                group,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800),
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
+                          Card(
+                            child: ListTile(
+                              minTileHeight: 76,
+                              title: Text(
+                                item.text,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${item.label.contains(',') ? item.label.split(',').skip(1).join(',').trim() : item.label} · ${item.signCount} señas',
+                              ),
+                              trailing: IconButton.filledTonal(
+                                onPressed: () async {
+                                  final route = await controller.replayHistory(
+                                    item,
+                                  );
+                                  if (context.mounted) {
+                                    openTranslationDestination(context, route);
+                                  }
+                                },
+                                icon: const Icon(Icons.play_arrow),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -235,7 +267,11 @@ class SettingsScreen extends StatelessWidget {
     final controller = context.watch<AppController>();
     return MobileCanvas(
       child: Scaffold(
-        appBar: const SenasHeader(title: 'Ajustes', showBack: true),
+        appBar: const SenasHeader(
+          title: 'Ajustes',
+          showBack: true,
+          backFallback: '/profile',
+        ),
         body: ListView(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           children: [
@@ -249,6 +285,25 @@ class SettingsScreen extends StatelessWidget {
                     onChanged: controller.setNotifications,
                     title: const Text('Notificaciones'),
                     secondary: const Icon(Icons.notifications_outlined),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.speed),
+                    title: const Text('Velocidad de reproducción'),
+                    trailing: DropdownButton<double>(
+                      value: controller.playbackSpeed,
+                      items: const <double>[0.5, 1.0, 1.5]
+                          .map(
+                            (speed) => DropdownMenuItem(
+                              value: speed,
+                              child: Text('${speed}x'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) controller.setPlaybackSpeed(value);
+                      },
+                    ),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
@@ -268,19 +323,6 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            const SectionTitle('Velocidad del avatar'),
-            const SizedBox(height: 10),
-            SegmentedButton<double>(
-              segments: const [.5, 1.0, 1.5]
-                  .map(
-                    (value) =>
-                        ButtonSegment(value: value, label: Text('${value}x')),
-                  )
-                  .toList(),
-              selected: {controller.playbackSpeed},
-              onSelectionChanged: (value) => controller.setSpeed(value.first),
-            ),
-            const SizedBox(height: 22),
             const SectionTitle('Privacidad'),
             const SizedBox(height: 10),
             Card(
@@ -295,7 +337,9 @@ class SettingsScreen extends StatelessWidget {
                   ListTile(
                     leading: Icon(Icons.delete_outline),
                     title: Text('Eliminar mis datos'),
-                    subtitle: Text('Disponible al conectar Firebase'),
+                    subtitle: Text(
+                      'Solicita la eliminación de tu cuenta desde soporte.',
+                    ),
                     trailing: Icon(Icons.chevron_right),
                   ),
                 ],
@@ -326,7 +370,13 @@ class PremiumScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MobileCanvas(
     child: Scaffold(
-      appBar: const SenasHeader(title: 'Plan Premium', showBack: true),
+      appBar: SenasHeader(
+        title: 'Plan Premium',
+        showBack: true,
+        backFallback: context.read<AppController>().isAuthenticated
+            ? '/profile'
+            : '/home',
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
@@ -365,34 +415,37 @@ class PremiumScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(22),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: const [
-                  Column(
-                    children: [
-                      Text(
-                        '50',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.muted,
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          '50',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.muted,
+                          ),
                         ),
-                      ),
-                      Text('palabras gratis'),
-                    ],
+                        Text('palabras gratis', textAlign: TextAlign.center),
+                      ],
+                    ),
                   ),
                   Icon(Icons.arrow_forward, color: AppColors.blue),
-                  Column(
-                    children: [
-                      Text(
-                        '200+',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.blue,
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          '200+',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.blue,
+                          ),
                         ),
-                      ),
-                      Text('con Premium'),
-                    ],
+                        Text('con Premium', textAlign: TextAlign.center),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -456,8 +509,9 @@ class _PlanCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge
-                ?.copyWith(color: highlighted ? AppColors.blueDark : null),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: highlighted ? AppColors.blueDark : null,
+            ),
           ),
           const SizedBox(height: 4),
           Text(

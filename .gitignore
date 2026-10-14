@@ -24,7 +24,16 @@ env.local
 .README.md
 .firebase.json
 *-firebase-adminsdk-*.json
+*-firebase-adminsdk-*.rar
 service-account*.json
+node_modules/
+tools/firebase/.env.*
+# Cloudinary credentials are for trusted local admin tooling only.
+tools/cloudinary/.env
+tools/cloudinary/.env.*
+!tools/cloudinary/.env.example
+tools/cloudinary/output/
+.firebase/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.

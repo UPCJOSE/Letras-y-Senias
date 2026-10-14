@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+
+    function validPreferences(preferences) {
+      return preferences is map
+        && preferences.keys().hasOnly([
+          'darkMode', 'highContrast', 'notifications', 'playbackSpeed'
+        ])
+        && preferences.get('darkMode', false) is bool
+        && preferences.get('highContrast', false) is bool
+        && preferences.get('notifications', true) is bool
+        && preferences.get('playbackSpeed', 1) in [0.5, 1, 1.5];
+    }
+
+    function validUserProfile(data) {
+      return data.keys().hasOnly([
+          'displayName', 'email', 'role', 'active', 'plan', 'preferences',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'displayName', 'email', 'role', 'active', 'plan', 'preferences',
+          'createdAt', 'updatedAt'
+        ])
+        && data.displayName is string
+        && data.email is string
+        && data.role in ['individual', 'admin']
+        && data.active is bool
+        && data.plan is string
+        && validPreferences(data.preferences);
+    }
+
+    function validCloudinaryUrl(url) {
+      return url is string
+        && url.matches('https://res\\.cloudinary\\.com/[A-Za-z0-9_-]+/.+');
+    }
+
+    function validFrameUrls(urls) {
+      return urls is list && urls.size() > 0 && urls.size() <= 6
+        && validCloudinaryUrl(urls[0])
+        && (urls.size() < 2 || validCloudinaryUrl(urls[1]))
+        && (urls.size() < 3 || validCloudinaryUrl(urls[2]))
+        && (urls.size() < 4 || validCloudinaryUrl(urls[3]))
+        && (urls.size() < 5 || validCloudinaryUrl(urls[4]))
+        && (urls.size() < 6 || validCloudinaryUrl(urls[5]));
+    }
+
+    function validSignMedia(media) {
+      return media is map
+        && media.keys().hasOnly(['provider', 'type', 'frameUrls', 'frameDurationMs',
+          'dataset', 'datasetVersion', 'subset', 'sourceLabel', 'participantId',
+          'license', 'attribution'])
+        && media.provider == 'cloudinary'
+        && media.type == 'imageSequence'
+        && validFrameUrls(media.frameUrls)
+        && media.frameDurationMs is int
+        && media.frameDurationMs >= 50 && media.frameDurationMs <= 2000
+        && media.dataset == 'LSC70' && media.datasetVersion == '2'
+        && media.subset in ['LSC70W', 'LSC70AN']
+        && media.sourceLabel is string && media.sourceLabel.size() > 0
+        && media.participantId is string && media.participantId.size() > 0
+        && media.license == 'CC BY 4.0'
+        && media.attribution is string && media.attribution.size() > 0;
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && validUserProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && ((isAdmin()
+            && request.resource.data.plan == 'free')
+          || (request.auth.uid == userId
+            && request.resource.data.role == 'individual'
+            && request.resource.data.active == true
+            && request.resource.data.plan == 'free'
+            && request.resource.data.email == request.auth.token.email));
+      allow update: if (isAdmin()
+          && validUserProfile(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.updatedAt == request.time)
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.active == resource.data.active
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['preferences', 'updatedAt'])
+          && validPreferences(request.resource.data.preferences)
+          && request.resource.data.updatedAt == request.time);
+      allow delete: if false;
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if isAdmin()
+        || (resource.data.status == 'validated' && resource.data.active == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /signs/{signId} {
+      allow get, list: if isAdmin()
+        || (resource.data.status == 'validated' && resource.data.active == true);
+      allow create: if isAdmin()
+        && (!('media' in request.resource.data) || validSignMedia(request.resource.data.media));
+      allow update: if isAdmin()
+        && (!('media' in request.resource.data) || validSignMedia(request.resource.data.media));
+      allow delete: if isAdmin();
+    }
+
+    match /translations/{translationId} {
+      allow get, list: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'originalText', 'normalizedText', 'signs', 'missingWords',
+          'spelling', 'signCount', 'hasMissingWords', 'createdAt',
+          'playbackSequence'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'originalText', 'normalizedText', 'signs', 'missingWords',
+          'spelling', 'signCount', 'hasMissingWords', 'createdAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.originalText is string
+        && request.resource.data.originalText.size() <= 2000
+        && request.resource.data.normalizedText is string
+        && request.resource.data.signs is list
+        && (!('playbackSequence' in request.resource.data)
+          || request.resource.data.playbackSequence is list)
+        && request.resource.data.missingWords is list
+        && request.resource.data.spelling is list
+        && request.resource.data.signCount is int
+        && request.resource.data.hasMissingWords
+          == (request.resource.data.missingWords.size() > 0)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

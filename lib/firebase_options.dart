@@ -38,6 +38,7 @@ class DefaultFirebaseOptions {
     projectId: 'senasapp-f4226',
     storageBucket: 'senasapp-f4226.firebasestorage.app',
   );
+
   /// Indica si se han configurado credenciales reales de Firebase.
   static bool get isConfigured =>
       web.apiKey != 'YOUR_WEB_API_KEY' && web.projectId != 'YOUR_PROJECT_ID';

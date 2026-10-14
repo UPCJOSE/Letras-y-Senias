@@ -1,0 +1,21 @@
+{
+  "name": "senasapp-cloudinary-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Carga local y segura del piloto de imágenes LSC70 a Cloudinary",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "upload:lsc70": "node scripts/upload-lsc70.cjs",
+    "test": "node --test test/*.test.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "yauzl": "^3.4.0"
+  }
+}
