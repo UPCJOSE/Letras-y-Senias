@@ -135,3 +135,5 @@ Para probar teclado y experiencia móvil, preferible **emulador Android** o un *
 ## Pitch corto
 
 > Desarrollamos una aplicación móvil que enseña Lengua de Señas Colombiana mediante un traductor de texto a señas con videos validados, con lecciones y progreso gamificado planificados, y reconocimiento por cámara como línea de investigación futura.
+
+Version antigua
