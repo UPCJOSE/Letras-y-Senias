@@ -392,6 +392,16 @@ void main() {
 
     await tester.tap(find.text('Validar todas (2)'));
     await tester.pumpAndSettle();
+    final dialogMaterial = find.ancestor(
+      of: find.text('Validar todas las señas'),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Material && widget.type == MaterialType.card,
+      ),
+    ).first;
+    final dialogRect = tester.getRect(dialogMaterial);
+    expect(dialogRect.width, lessThanOrEqualTo(288));
+    expect(dialogRect.left, greaterThanOrEqualTo(16));
+    expect(dialogRect.right, lessThanOrEqualTo(304));
     expect(find.textContaining('Se publicarán 2 señas'), findsOneWidget);
     expect(find.textContaining('1 sin recurso visual'), findsOneWidget);
     await tester.tap(find.text('Cancelar'));
@@ -404,6 +414,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(signs.validatedIds, ['hola', 'a']);
     expect(find.text('2 señas validadas y publicadas.'), findsOneWidget);
+  });
+
+  testWidgets('diálogo Validar todas conserva el lienzo móvil en escritorio', (
+    tester,
+  ) async {
+    final controller = AppController(
+      signRepository: _BulkValidationRepository(),
+    );
+    addTearDown(controller.dispose);
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: controller,
+        child: const MaterialApp(home: DictionaryManagementScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Validar todas (2)'));
+    await tester.pumpAndSettle();
+
+    final dialogMaterial = find.ancestor(
+      of: find.text('Validar todas las señas'),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Material && widget.type == MaterialType.card,
+      ),
+    ).first;
+    final dialogRect = tester.getRect(dialogMaterial);
+    expect(dialogRect.width, lessThanOrEqualTo(430));
+    expect(dialogRect.center.dx, 720);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('una sesión invitada no puede abrir rutas de administración', (

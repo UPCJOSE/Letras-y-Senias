@@ -591,6 +591,11 @@ class _DictionaryManagementScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 24,
+        ),
+        constraints: const BoxConstraints(maxWidth: 430),
         title: const Text('Validar todas las señas'),
         content: Text(
           'Se publicarán ${pending.length} señas pendientes con recurso LSC70. '

@@ -23,22 +23,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC-nbIMYZKqe3pZNv7OUdnYmcglOcCSfQg',
-    appId: '1:417129783569:web:45e14e0994fd347b20acb0',
-    messagingSenderId: '417129783569',
-    projectId: 'senasapp-f4226',
-    authDomain: 'senasapp-f4226.firebaseapp.com',
-    storageBucket: 'senasapp-f4226.firebasestorage.app',
+    apiKey: 'AIzaSyBBL50VntZz3TKG-NAJkv3YZp5nnGDGdGw',
+    appId: '1:97333845335:web:f91b925982b0c0d9dfb212',
+    messagingSenderId: '97333845335',
+    projectId: 'senasapp-a0515',
+    authDomain: 'senasapp-a0515.firebaseapp.com',
+    storageBucket: 'senasapp-a0515.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBvMCCHhgc35k9PhbFWEe6-44RomL-GYis',
-    appId: '1:417129783569:android:412f5e3e6fb2e35b20acb0',
-    messagingSenderId: '417129783569',
-    projectId: 'senasapp-f4226',
-    storageBucket: 'senasapp-f4226.firebasestorage.app',
+    apiKey: 'AIzaSyD_U7j2-tfE2km-7kOIR02Nc2NXtaptmRQ',
+    appId: '1:97333845335:android:0ac8ccfa9da7edbadfb212',
+    messagingSenderId: '97333845335',
+    projectId: 'senasapp-a0515',
+    storageBucket: 'senasapp-a0515.firebasestorage.app',
   );
-
   /// Indica si se han configurado credenciales reales de Firebase.
   static bool get isConfigured =>
       web.apiKey != 'YOUR_WEB_API_KEY' && web.projectId != 'YOUR_PROJECT_ID';

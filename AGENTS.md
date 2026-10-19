@@ -17,7 +17,7 @@ Orden de prioridad para decisiones visuales y funcionales:
 3. Los ajustes posteriores escritos para recuperar contraseña, historial, ajustes, Premium y panel administrativo.
 4. La presentación `SeñasApp(corregido).pptx` como contexto académico y de negocio.
 
-Cuando la presentación contradiga el mockup actualizado, prevalece Figma. El usuario decidió que la app no debe usar catálogos, animaciones ni imágenes locales de prueba. La traducción consume exclusivamente señas publicadas en Firestore; el contenido visual deberá venir de una URL remota configurada, no de assets empaquetados.
+Cuando la presentación contradiga el mockup actualizado, prevalece Figma; las decisiones posteriores del usuario sobre LSC70 y la ausencia de avatar prevalecen sobre los dibujos de avatar del mockup. El usuario decidió que la app no debe usar catálogos, animaciones ni imágenes locales de prueba. La traducción consume exclusivamente señas publicadas en Firestore; el contenido visual viene de URL remotas configuradas, no de assets empaquetados.
 
 Decisión vigente del usuario: SeñasApp tiene únicamente los roles `individual` y `admin`. El rol empresarial y sus flujos quedan descartados aunque aparezcan en versiones anteriores de Figma o de la presentación (ver sección 16 para el registro detallado).
 
@@ -27,7 +27,9 @@ Enlace de referencia:
 
 ## 3. Alcance actual
 
-La fase actual integra el reproductor LSC70 en traducción, deletreo, diccionario e historial. Firestore guarda metadatos y Cloudinary sirve fotogramas JPG por HTTPS. El piloto comprende Hola, Buenas (alias Bueno/Bien), Días, Tarde, Noche y A–Z más Ñ. El cargador firmado `tools/cloudinary/` lee el ZIP sin extraerlo, sube los recursos por API y genera el manifiesto que se importa desde el panel admin. No hay respaldo visual dentro de Flutter. Los audios quedan para después.
+La fase visual LSC70 está implementada en traducción, deletreo, diccionario e historial. Firestore guarda metadatos y Cloudinary sirve fotogramas JPG por HTTPS. El piloto comprende Hola, Buenas (alias Bueno/Bien), Días, Tarde, Noche y A–Z más Ñ. El cargador firmado `tools/cloudinary/` lee el ZIP sin extraerlo, sube los recursos por API y genera el manifiesto que se importa desde el panel admin. No hay respaldo visual dentro de Flutter. La síntesis de voz queda como fase posterior, todavía no implementada.
+
+El usuario indicó que ya realizó la carga y comprobó los flujos principales. Esto no sustituye una verificación de las URL, documentos y estados del proyecto Firebase/Cloudinary actualmente conectado: no declarar el piloto remoto completo o lingüísticamente validado sin comprobarlo. La prueba externa de generar un avatar que hiciera «Hola» no reprodujo la seña fielmente y añadió movimientos; esa vía se descartó para el contenido de traducción (sección 10).
 
 Fuera del alcance de esta fase:
 
@@ -46,7 +48,7 @@ Fuera del alcance de esta fase:
 - Diseño web centrado en un lienzo móvil de máximo 430 px.
 - Arquitectura MVC ligera.
 - `provider` para estado compartido.
-- `go_router` para navegación.
+- `go_router` para navegación: `StatefulShellRoute.indexedStack` conserva el estado de Inicio, Traducir, Diccionario y Perfil; las rutas secundarias usan una transición breve y permiten regresar.
 - Autenticación con Firebase Auth (correo/contraseña), recuperación, perfil Firestore y sesión. El rol se lee desde `users/{uid}.role`; no se usan custom claims.
 - Conexión opcional a Auth/Firestore Emulator, solo debug y con flag explícito.
 - Temas claro, oscuro y alto contraste.
@@ -54,6 +56,8 @@ Fuera del alcance de esta fase:
 - Diccionario consultado exclusivamente desde Firestore; el seed local antiguo de 36 términos fue retirado.
 - Normalización que preserva Ñ, coincidencia por frases y alias, sugerencias y deletreo con letras publicadas.
 - Modelo opcional de medios LSC70, manifiesto administrativo con vista previa y reproductor de secuencias remotas sin fallback local.
+- Gestión del diccionario con botón «Validar todas» para publicar en lote señas pendientes con medio LSC70 utilizable, después de una confirmación explícita de revisión humana; no constituye validación lingüística automática.
+- Panel administrativo sin menú lateral; acceso directo a Personas y Diccionario. El detalle del diccionario se presenta como hoja ajustada al ancho móvil, y Deletreo dispone de cabecera y regreso al origen.
 - Diccionario público, historial, preferencias, listado de personas y métricas conectados a Firestore.
 - Reglas e índices Firestore para acceso por dueño y administrador; no existe backend Cloud Functions.
 - Pruebas Flutter y pruebas de reglas con Firebase Emulator Suite.
@@ -80,9 +84,14 @@ lib/
 │   └── app_router.dart
 ├── services/
 │   ├── auth_service.dart
+│   ├── firebase_app_check_service.dart
+│   ├── firebase_emulator_settings.dart
+│   ├── lsc70_manifest_service.dart
+│   ├── shared_latest_stream.dart
 │   └── translation_service.dart
 ├── shared/widgets/
-│   └── app_widgets.dart
+│   ├── app_widgets.dart
+│   └── lsc70_player.dart
 ├── theme/
 │   └── app_theme.dart
 └── views/
@@ -141,7 +150,7 @@ Las siguientes rutas pertenecían a la versión anterior con rol de empresa y fu
 
 Ningún agente o desarrollador debe restaurar estas rutas ni añadir enlaces hacia ellas.
 
-Toda pantalla nueva debe registrarse en `lib/routes/app_router.dart`. Se debe utilizar `context.go` para cambiar una sección principal y `context.push` para abrir una pantalla secundaria que permita regresar.
+Toda pantalla nueva debe registrarse en `lib/routes/app_router.dart`. Las cuatro secciones principales pertenecen a `StatefulShellRoute.indexedStack`; su barra inferior permanece visible y conserva el estado de cada sección. Se debe utilizar `context.go` para cambiar una sección principal y `context.push` para abrir una pantalla secundaria que permita regresar. Un acceso directo a Deletreo sin traducción activa redirige a Traducir.
 
 ## 7. Identidad visual
 
@@ -182,7 +191,7 @@ Los tokens de color y el tema viven en `lib/theme/app_theme.dart`. No duplicar c
 - El onboarding (`/onboarding`) no hace alusión a empresas o instituciones.
 - No usar perfiles, métricas, traducciones ni usuarios ficticios como fallback silencioso. Mostrar estados vacíos, carga o error.
 - El historial guarda la entrada y señas resueltas por Firestore, por usuario autenticado. Invitados no escriben datos remotos.
-- Las 36 entradas iniciales se importan únicamente como `draft`, `active: false` y `validated: false`; el diccionario público muestra solo señas activas validadas.
+- El antiguo seed local de 36 términos fue retirado. El manifiesto LSC70 crea entradas nuevas como borradores; el diccionario público muestra solo señas activas y validadas. No borrar documentos remotos preexistentes al importar.
 - No hay invitaciones. Un administrador autenticado puede crear cuentas `individual` y `admin`; el alta no cambia la sesión actual.
 - Para probar Auth/Firestore sin tocar el proyecto real, usar `USE_FIREBASE_EMULATORS=true` en debug. En release este modo falla de forma cerrada.
 - App Check está configurado en cliente para web/Android; sus claves de proveedor y enforcement requieren preparación explícita en Firebase Console.
@@ -204,13 +213,17 @@ Comportamiento actual:
 6. Calcula sugerencias mediante distancia de Levenshtein.
 7. Prepara deletreo si no encuentra coincidencias.
 
-No añadir Gemini ni otro modelo generativo durante la fase de vistas. No describir este motor como traducción gramatical completa a LSC.
+La lógica de coincidencia se ejecuta en el cliente sobre el catálogo publicado que llega de Firestore; «local» no significa catálogo ni medios locales de respaldo. No añadir Gemini ni otro modelo generativo para inventar señas. No describir este motor como traducción gramatical completa a LSC.
 
 ## 10. Medios visuales LSC70 y siguiente fase
 
 ### Decisión vigente: secuencias originales LSC70 en Cloudinary
 
 No crear avatar. Usar las fotografías originales de LSC70 v2, sin archivos multimedia locales. Cloudinary sirve los JPG; Firestore mantiene las URL y metadatos.
+
+### Resultado de la prueba con avatar generado
+
+El usuario probó generar la seña «Hola» con un avatar mediante Google Flow/Veo y reportó que la seña no concordaba y que el video hacía movimientos de más. El material generado no se incorpora al diccionario, no sustituye LSC70 y no debe presentarse como una seña correcta. No seguir esta vía para generar automáticamente señas de la app sin una nueva decisión expresa y revisión competente en LSC. Un personaje decorativo para marca u onboarding sería una decisión visual distinta: no sería el reproductor de traducciones ni está implementado actualmente.
 
 #### Alternativas externas exploradas
 
@@ -278,6 +291,7 @@ Antes de entregar cambios se debe ejecutar, como mínimo:
 Las pruebas actuales están en `test/`.
 
 - Mantener pruebas para normalización, coincidencias, sugerencias y deletreo con fixtures explícitos; no usar un catálogo local de fallback.
+- Mantener pruebas del reproductor remoto, manifiesto, navegación y validación por lote; una prueba local no demuestra que las URL de Cloudinary o los documentos remotos del proyecto activo sean correctos.
 - Ejecutar `npm --prefix tools/firebase run test:rules` para verificar privacidad, roles, catálogo e historial con Firestore Emulator.
 - Agregar una prueba de widget cuando una modificación cambie un flujo importante.
 - No corregir una prueba eliminándola sin justificar por qué dejó de representar el comportamiento esperado.
@@ -306,7 +320,7 @@ Una vista se considera terminada cuando:
 - Se adapta al lienzo móvil sin overflow.
 - Tiene navegación de entrada y salida.
 - Presenta estados normales, vacíos y errores con información clara; no incluir modos o datos de demostración en la app.
-- No introduce conexiones externas adicionales a Firebase Auth sin autorización.
+- No introduce servicios, credenciales ni fuentes de medios adicionales a Firebase y Cloudinary sin autorización.
 - `flutter analyze` no reporta problemas.
 - Las pruebas existentes continúan aprobando.
 - Fue revisada visualmente en Chrome.
@@ -356,6 +370,8 @@ Se tomó la decisión firme de descartar por completo este modelo para enfocar S
 5. **Flujos de administración (`lib/views/management_screens.dart`)**:
    - `AdminDashboardScreen`: Se sustituyó la tarjeta de estadística "Empresas (18)" por "Traducciones (4.860)". Se renombró "Usuarios (1.284)" a "Personas (1.284)". El acceso rápido "Gestionar usuarios (Empresas e individuales)" cambió a "Gestionar personas (Personas registradas)".
    - `AdminUsersScreen`: Se retiró por completo la sección de empresas asociadas (`Clínica Erasmo Ltda.`, `Banco de Bogotá`, `Colegio San Ignacio`) y ahora lista únicamente personas individuales.
+
+   Las cifras entre paréntesis y los nombres de empresas de este registro son ejemplos de la interfaz antigua, no datos actuales. Las métricas vigentes se consultan en Firestore.
 
 ### 16.3. Limpieza del código residual
 

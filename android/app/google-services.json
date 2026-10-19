@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "417129783569",
-    "project_id": "senasapp-f4226",
-    "storage_bucket": "senasapp-f4226.firebasestorage.app"
+    "project_number": "97333845335",
+    "project_id": "senasapp-a0515",
+    "storage_bucket": "senasapp-a0515.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:417129783569:android:412f5e3e6fb2e35b20acb0",
+        "mobilesdk_app_id": "1:97333845335:android:0ac8ccfa9da7edbadfb212",
         "android_client_info": {
           "package_name": "com.senasapp.senas_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBvMCCHhgc35k9PhbFWEe6-44RomL-GYis"
+          "current_key": "AIzaSyD_U7j2-tfE2km-7kOIR02Nc2NXtaptmRQ"
         }
       ],
       "services": {
