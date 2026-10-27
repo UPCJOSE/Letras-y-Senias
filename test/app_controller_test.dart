@@ -70,6 +70,7 @@ class _ProfileRepository extends UserRepository {
     required String uid,
     required String email,
     required String displayName,
+    CommunicationProfile? communicationProfile,
   }) async {}
 
   @override

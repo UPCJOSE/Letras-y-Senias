@@ -32,6 +32,7 @@ class UserRepository {
     required String uid,
     required String email,
     required String displayName,
+    CommunicationProfile? communicationProfile,
   }) async {
     final reference = _users.doc(uid);
     await _db.runTransaction((transaction) async {
@@ -48,11 +49,21 @@ class UserRepository {
           'highContrast': false,
           'notifications': true,
         },
+        if (communicationProfile != null)
+          'communicationProfile': communicationProfile.name,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
   }
+
+  Future<void> setCommunicationProfile(
+    String uid,
+    CommunicationProfile profile,
+  ) => _users.doc(uid).update({
+    'communicationProfile': profile.name,
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
 
   Future<void> createManagedProfile({
     required String uid,

@@ -1,4 +1,29 @@
+import 'package:flutter/material.dart';
+
 enum AppRole { individual, admin }
+
+enum CommunicationProfile {
+  hearing,
+  deaf;
+
+  String get label =>
+      this == CommunicationProfile.hearing ? 'Persona oyente' : 'Persona sorda';
+
+  String get description => this == CommunicationProfile.hearing
+      ? 'Escribo mensajes y la otra persona los ve en señas.'
+      : 'Leo los mensajes en texto y los veo en señas.';
+
+  IconData get icon => this == CommunicationProfile.hearing
+      ? Icons.hearing_outlined
+      : Icons.hearing_disabled_outlined;
+
+  static CommunicationProfile? fromName(Object? value) {
+    for (final item in CommunicationProfile.values) {
+      if (item.name == value) return item;
+    }
+    return null;
+  }
+}
 
 enum SignStatus { draft, validated }
 
@@ -101,6 +126,7 @@ class AppUserProfile {
     required this.role,
     this.active = true,
     this.preferences = const {},
+    this.communicationProfile,
   });
 
   final String id;
@@ -109,6 +135,7 @@ class AppUserProfile {
   final AppRole role;
   final bool active;
   final Map<String, dynamic> preferences;
+  final CommunicationProfile? communicationProfile;
 
   factory AppUserProfile.fromMap(String id, Map<String, dynamic> data) {
     return AppUserProfile(
@@ -118,6 +145,9 @@ class AppUserProfile {
       role: data['role'] == 'admin' ? AppRole.admin : AppRole.individual,
       active: data['active'] as bool? ?? true,
       preferences: data['preferences'] as Map<String, dynamic>? ?? const {},
+      communicationProfile: CommunicationProfile.fromName(
+        data['communicationProfile'],
+      ),
     );
   }
 }
@@ -276,4 +306,98 @@ class AdminDashboardStats {
   final int translations;
   final int draftSigns;
   final int untranslatedWords;
+}
+
+enum ConversationStatus { waiting, active, closed }
+
+class Conversation {
+  const Conversation({
+    required this.code,
+    required this.hostId,
+    required this.hostName,
+    required this.hostProfile,
+    required this.status,
+    this.guestId,
+    this.guestName = '',
+    this.guestProfile,
+    this.participantIds = const [],
+  });
+
+  final String code;
+  final String hostId;
+  final String hostName;
+  final CommunicationProfile hostProfile;
+  final String? guestId;
+  final String guestName;
+  final CommunicationProfile? guestProfile;
+  final ConversationStatus status;
+  final List<String> participantIds;
+
+  bool get isClosed => status == ConversationStatus.closed;
+  bool get hasGuest => guestId != null;
+
+  bool includes(String uid) => participantIds.contains(uid);
+
+  String partnerName(String uid) => uid == hostId ? guestName : hostName;
+
+  CommunicationProfile? partnerProfile(String uid) =>
+      uid == hostId ? guestProfile : hostProfile;
+
+  factory Conversation.fromMap(String code, Map<String, dynamic> data) {
+    final status = switch (data['status']) {
+      'active' => ConversationStatus.active,
+      'closed' => ConversationStatus.closed,
+      _ => ConversationStatus.waiting,
+    };
+    return Conversation(
+      code: code,
+      hostId: data['hostId'] as String? ?? '',
+      hostName: data['hostName'] as String? ?? '',
+      hostProfile:
+          CommunicationProfile.fromName(data['hostProfile']) ??
+          CommunicationProfile.hearing,
+      guestId: data['guestId'] as String?,
+      guestName: data['guestName'] as String? ?? '',
+      guestProfile: CommunicationProfile.fromName(data['guestProfile']),
+      status: status,
+      participantIds: (data['participantIds'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(),
+    );
+  }
+}
+
+class ConversationMessage {
+  const ConversationMessage({
+    required this.id,
+    required this.senderId,
+    required this.senderName,
+    required this.senderProfile,
+    required this.text,
+    this.createdAt,
+  });
+
+  final String id;
+  final String senderId;
+  final String senderName;
+  final CommunicationProfile senderProfile;
+  final String text;
+  final DateTime? createdAt;
+
+  factory ConversationMessage.fromMap(
+    String id,
+    Map<String, dynamic> data, {
+    DateTime? createdAt,
+  }) {
+    return ConversationMessage(
+      id: id,
+      senderId: data['senderId'] as String? ?? '',
+      senderName: data['senderName'] as String? ?? '',
+      senderProfile:
+          CommunicationProfile.fromName(data['senderProfile']) ??
+          CommunicationProfile.hearing,
+      text: data['text'] as String? ?? '',
+      createdAt: createdAt,
+    );
+  }
 }

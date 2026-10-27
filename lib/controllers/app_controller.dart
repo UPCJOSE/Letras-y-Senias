@@ -48,6 +48,7 @@ class AppController extends ChangeNotifier {
   String? _translationNotice;
   int _translationRevision = 0;
   bool _isTranslating = false;
+  CommunicationProfile? _pendingCommunicationProfile;
   late final SharedLatestStream<List<SignEntry>> _publicSignsStream =
       SharedLatestStream(_signRepository.watchPublishedSigns);
   late final SharedLatestStream<List<SignEntry>> _allSignsStream =
@@ -88,6 +89,8 @@ class AppController extends ChangeNotifier {
       ? _currentUser!.displayName!
       : _currentUser?.email?.split('@').first ?? 'Usuario';
   String get userEmail => _currentUser?.email ?? '';
+  CommunicationProfile? get communicationProfile =>
+      _profile?.communicationProfile;
 
   Stream<List<TranslationHistoryItem>> get history {
     final uid = _currentUser?.uid;
@@ -158,6 +161,7 @@ class AppController extends ChangeNotifier {
         uid: user.uid,
         email: user.email ?? '',
         displayName: user.displayName ?? '',
+        communicationProfile: _pendingCommunicationProfile,
       );
       final profile = await _userRepository.getProfile(user.uid);
       if (revision != _authRevision) return;
@@ -235,9 +239,11 @@ class AppController extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    CommunicationProfile? communicationProfile,
   }) async {
     _authLoading = true;
     _authError = null;
+    _pendingCommunicationProfile = communicationProfile;
     notifyListeners();
     try {
       final credential = await _authService.register(
@@ -251,6 +257,7 @@ class AppController extends ChangeNotifier {
       _authError = _friendlyError(error);
       return false;
     } finally {
+      _pendingCommunicationProfile = null;
       _authLoading = false;
       notifyListeners();
     }
@@ -376,6 +383,31 @@ class AppController extends ChangeNotifier {
     );
     notifyListeners();
     return item.spelling.isNotEmpty ? '/spelling' : '/translate';
+  }
+
+  Future<void> setCommunicationProfile(CommunicationProfile value) async {
+    final user = _currentUser;
+    final current = _profile;
+    if (user == null || current == null) {
+      throw StateError('Inicia sesión para elegir tu tipo de persona.');
+    }
+    await _userRepository.setCommunicationProfile(user.uid, value);
+    _profile = AppUserProfile(
+      id: current.id,
+      displayName: current.displayName,
+      email: current.email,
+      role: current.role,
+      active: current.active,
+      preferences: current.preferences,
+      communicationProfile: value,
+    );
+    notifyListeners();
+  }
+
+  Future<TranslationResult> translateQuietly(String input) async {
+    final publishedSigns =
+        _publicSignsStream.latest ?? await _signRepository.getPublishedSigns();
+    return _translationService.withCatalog(publishedSigns).translate(input);
   }
 
   Future<void> saveDraftSign({

@@ -95,6 +95,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 14),
+          Card(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: ListTile(
+              onTap: () => context.push('/conversation'),
+              minTileHeight: 76,
+              leading: const CircleAvatar(
+                backgroundColor: AppColors.blue,
+                foregroundColor: Colors.white,
+                child: Icon(Icons.forum_outlined),
+              ),
+              title: const Text(
+                'Conversación',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Habla en una sala compartida con un código',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+            ),
+          ),
           const SizedBox(height: 22),
           const SectionTitle('Accesos rápidos'),
           const SizedBox(height: 12),

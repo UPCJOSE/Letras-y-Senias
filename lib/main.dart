@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 import 'controllers/app_controller.dart';
+import 'controllers/conversation_controller.dart';
 import 'firebase_options.dart';
 import 'services/firebase_app_check_service.dart';
 import 'services/firebase_emulator_settings.dart';
@@ -41,8 +42,14 @@ Future<void> main() async {
   }
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppController(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppController()),
+        ChangeNotifierProxyProvider<AppController, ConversationController>(
+          create: (_) => ConversationController(),
+          update: (_, app, conversation) => conversation!..bindApp(app),
+        ),
+      ],
       child: const SenasApp(),
     ),
   );

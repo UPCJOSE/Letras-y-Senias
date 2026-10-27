@@ -44,6 +44,7 @@ Fuera del alcance de esta fase:
 ## 4. Estado implementado
 
 - Proyecto Flutter para Web y Android.
+- Conversaciones compartidas para una persona oyente y una persona sorda mediante salas privadas con código.
 - Material Design 3.
 - Diseño web centrado en un lienzo móvil de máximo 430 px.
 - Arquitectura MVC ligera.
@@ -52,7 +53,7 @@ Fuera del alcance de esta fase:
 - Autenticación con Firebase Auth (correo/contraseña), recuperación, perfil Firestore y sesión. El rol se lee desde `users/{uid}.role`; no se usan custom claims.
 - Conexión opcional a Auth/Firestore Emulator, solo debug y con flag explícito.
 - Temas claro, oscuro y alto contraste.
-- 17 rutas navegables.
+- 19 rutas navegables, incluidas las dos rutas de conversación.
 - Diccionario consultado exclusivamente desde Firestore; el seed local antiguo de 36 términos fue retirado.
 - Normalización que preserva Ñ, coincidencia por frases y alias, sugerencias y deletreo con letras publicadas.
 - Modelo opcional de medios LSC70, manifiesto administrativo con vista previa y reproductor de secuencias remotas sin fallback local.
@@ -73,8 +74,10 @@ lib/
 ├── firebase_options.dart
 ├── main.dart
 ├── controllers/
-│   └── app_controller.dart
+│   ├── app_controller.dart
+│   └── conversation_controller.dart
 ├── repositories/
+│   ├── conversation_repository.dart
 │   ├── user_repository.dart
 │   ├── sign_repository.dart
 │   └── translation_repository.dart
@@ -96,6 +99,7 @@ lib/
 │   └── app_theme.dart
 └── views/
     ├── access_screens.dart
+    ├── conversation_screens.dart
     ├── core_screens.dart
     ├── management_screens.dart
     └── profile_screens.dart
@@ -131,6 +135,8 @@ Las vistas no deben acceder directamente a Firebase. La autenticación actual en
 | `/history` | Historial de traducciones |
 | `/settings` | Preferencias y accesibilidad |
 | `/premium` | Comparación informativa de planes |
+| `/conversation` | Crear o unirse a una conversación compartida |
+| `/conversation/room/:code` | Sala de conversación en tiempo real |
 | `/admin` | Dashboard administrador |
 | `/admin/users` | Gestión de personas registradas |
 | `/admin/dictionary` | Gestión del diccionario |
@@ -192,7 +198,9 @@ Los tokens de color y el tema viven en `lib/theme/app_theme.dart`. No duplicar c
 - No usar perfiles, métricas, traducciones ni usuarios ficticios como fallback silencioso. Mostrar estados vacíos, carga o error.
 - El historial guarda la entrada y señas resueltas por Firestore, por usuario autenticado. Invitados no escriben datos remotos.
 - El antiguo seed local de 36 términos fue retirado. El manifiesto LSC70 crea entradas nuevas como borradores; el diccionario público muestra solo señas activas y validadas. No borrar documentos remotos preexistentes al importar.
-- No hay invitaciones. Un administrador autenticado puede crear cuentas `individual` y `admin`; el alta no cambia la sesión actual.
+- No hay invitaciones por correo ni Cloud Functions. Las conversaciones usan un código de seis caracteres y requieren participantes autenticados con perfiles de comunicación opuestos (`hearing`/`deaf`), independientes del rol de la cuenta.
+- El perfil de comunicación puede elegirse durante el registro o desde Conversación para cuentas existentes; los mensajes se guardan en Firestore y no se añaden al historial normal de traducciones.
+- Las reglas locales de salas y mensajes están en `firestore.rules`; no desplegarlas en Firebase sin autorización operativa expresa.
 - Para probar Auth/Firestore sin tocar el proyecto real, usar `USE_FIREBASE_EMULATORS=true` en debug. En release este modo falla de forma cerrada.
 - App Check está configurado en cliente para web/Android; sus claves de proveedor y enforcement requieren preparación explícita en Firebase Console.
 - El panel administrador no usa menú lateral: presenta las métricas y los accesos directos a personas y diccionario. Las categorías se gestionan desde el diccionario y Premium se consulta desde Perfil.

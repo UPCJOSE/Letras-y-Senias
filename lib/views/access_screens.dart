@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
+import '../models/app_models.dart';
 import '../shared/widgets/app_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -397,6 +398,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _hidePassword = true;
   bool _hideConfirm = true;
+  CommunicationProfile? _communicationProfile;
+  bool _profileMissing = false;
 
   @override
   void dispose() {
@@ -408,12 +411,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
+    final formValid = _formKey.currentState!.validate();
+    final profile = _communicationProfile;
+    setState(() => _profileMissing = profile == null);
+    if (!formValid || profile == null) return;
     final controller = context.read<AppController>();
     final success = await controller.register(
       name: _nameController.text,
       email: _emailController.text,
       password: _passwordController.text,
+      communicationProfile: profile,
     );
     if (!mounted) return;
     if (success) {
@@ -500,7 +507,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
+              Text(
+                '¿Cómo te comunicas?',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Lo usamos para adaptar las conversaciones compartidas. '
+                'Podrás cambiarlo después.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              CommunicationProfilePicker(
+                value: _communicationProfile,
+                enabled: !isLoading,
+                errorText: _profileMissing
+                    ? 'Elige cómo te comunicas para continuar'
+                    : null,
+                onChanged: (value) => setState(() {
+                  _communicationProfile = value;
+                  _profileMissing = false;
+                }),
+              ),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _passwordController,
                 obscureText: _hidePassword,

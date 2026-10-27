@@ -23,10 +23,15 @@ service cloud.firestore {
         && preferences.get('playbackSpeed', 1) in [0.5, 1, 1.5];
     }
 
+    function validCommunicationProfile(data) {
+      return !('communicationProfile' in data)
+        || data.communicationProfile in ['hearing', 'deaf'];
+    }
+
     function validUserProfile(data) {
       return data.keys().hasOnly([
           'displayName', 'email', 'role', 'active', 'plan', 'preferences',
-          'createdAt', 'updatedAt'
+          'communicationProfile', 'createdAt', 'updatedAt'
         ])
         && data.keys().hasAll([
           'displayName', 'email', 'role', 'active', 'plan', 'preferences',
@@ -37,6 +42,7 @@ service cloud.firestore {
         && data.role in ['individual', 'admin']
         && data.active is bool
         && data.plan is string
+        && validCommunicationProfile(data)
         && validPreferences(data.preferences);
     }
 
@@ -97,7 +103,8 @@ service cloud.firestore {
           && request.resource.data.role == resource.data.role
           && request.resource.data.active == resource.data.active
           && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['preferences', 'updatedAt'])
+            .hasOnly(['preferences', 'communicationProfile', 'updatedAt'])
+          && validCommunicationProfile(request.resource.data)
           && validPreferences(request.resource.data.preferences)
           && request.resource.data.updatedAt == request.time);
       allow delete: if false;
@@ -146,6 +153,81 @@ service cloud.firestore {
           == (request.resource.data.missingWords.size() > 0)
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
+    }
+
+    function isParticipant(conversationId) {
+      return signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'code', 'hostId', 'hostName', 'hostProfile', 'guestId', 'guestName',
+          'guestProfile', 'participantIds', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'code', 'hostId', 'hostName', 'hostProfile', 'guestId', 'guestName',
+          'guestProfile', 'participantIds', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.code == conversationId
+        && conversationId.matches('[A-HJ-KM-NP-Z2-9]{6}')
+        && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.hostName is string
+        && request.resource.data.hostName.size() <= 200
+        && request.resource.data.hostProfile in ['hearing', 'deaf']
+        && request.resource.data.guestId == null
+        && request.resource.data.guestProfile == null
+        && request.resource.data.participantIds == [request.auth.uid]
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if signedIn()
+        && request.resource.data.updatedAt == request.time
+        && (
+          (request.auth.uid in resource.data.participantIds
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'updatedAt'])
+            && request.resource.data.status == 'closed')
+          || (!(request.auth.uid in resource.data.participantIds)
+            && resource.data.status == 'waiting'
+            && resource.data.guestId == null
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['guestId', 'guestName', 'guestProfile',
+                'participantIds', 'status', 'updatedAt'])
+            && request.resource.data.guestId == request.auth.uid
+            && request.resource.data.guestName is string
+            && request.resource.data.guestName.size() <= 200
+            && request.resource.data.guestProfile in ['hearing', 'deaf']
+            && request.resource.data.guestProfile != resource.data.hostProfile
+            && request.resource.data.participantIds
+              == resource.data.participantIds.concat([request.auth.uid])
+            && request.resource.data.status == 'active')
+        );
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow get, list: if isParticipant(conversationId);
+        allow create: if isParticipant(conversationId)
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.status == 'active'
+          && request.resource.data.keys().hasOnly([
+            'senderId', 'senderName', 'senderProfile', 'text', 'createdAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'senderId', 'senderName', 'senderProfile', 'text', 'createdAt'
+          ])
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderName is string
+          && request.resource.data.senderName.size() <= 200
+          && request.resource.data.senderProfile in ['hearing', 'deaf']
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
     }
 
     match /{document=**} {

@@ -7,7 +7,7 @@ Aplicación Flutter web y Android para consultar en Firebase un diccionario cont
 - Firebase Auth para registro personal, inicio de sesión y recuperación.
 - Firestore para perfiles, preferencias, categorías, señas, traducciones e historial.
 - App Check configurado en el cliente; se puede usar sin Blaze.
-- Sin Cloud Functions ni invitaciones. Los roles se leen desde `users/{uid}.role` en Firestore.
+- Sin Cloud Functions ni invitaciones por correo. Las conversaciones se comparten mediante un código temporal de seis caracteres. Los roles se leen desde `users/{uid}.role` en Firestore.
 - El registro público siempre crea `individual`; un administrador autenticado puede crear cuentas `individual` o `admin` desde Gestión de personas.
 - La app no incluye un catálogo local de respaldo: solo consulta señas de Firestore con `status: validated` y `active: true`.
 - La app no empaqueta videos ni fotogramas de señas. Firestore almacena metadatos y URL HTTPS públicas de Cloudinary. Las URLs se agregan desde Gestión del diccionario con un manifiesto JSON; la app no sube medios ni contiene secretos de Cloudinary.
@@ -16,6 +16,12 @@ Aplicación Flutter web y Android para consultar en Firebase un diccionario cont
 - La lectura de voz sigue siendo opcional.
 
 Spark ofrece cuotas gratuitas limitadas para Firestore, pero no permite desplegar Cloud Functions. El proyecto usa la base de datos predeterminada; no se deben crear bases adicionales ni activar servicios que pidan facturación.
+
+## Conversación compartida
+
+Las personas autenticadas pueden crear una sala y compartir su código de seis caracteres con alguien que tenga el perfil de comunicación opuesto (oyente/sorda). Los mensajes se guardan en `conversations/{code}/messages`; la otra persona puede leerlos como texto y consultar las señas disponibles en el diccionario publicado de Firestore. Estos mensajes no se agregan al historial normal de traducciones.
+
+El perfil de comunicación se elige al registrarse o desde la pantalla de conversación para cuentas existentes; es independiente del rol `individual`/`admin`. La función requiere las reglas locales de `firestore.rules`. Estas reglas no se despliegan automáticamente: revisa sus cambios y solicita autorización antes de desplegarlas en Firebase.
 
 ## Ejecutar la app
 
@@ -58,7 +64,7 @@ Confirma que el proveedor de correo/contraseña está habilitado y que existe la
 Para el primer administrador (solo una vez), crea una cuenta personal, verifica el correo y deja que la app cree su perfil. En Firebase Console abre Firestore, entra en `users`, abre el documento cuyo ID es el UID de esa cuenta y cambia `role` de `individual` a `admin`. También puedes usar la herramienta local con permisos autorizados; el comando es de vista previa y no escribe sin `--apply`:
 
 ```powershell
-npm --prefix tools/firebase run bootstrap:admin -- --project=senasapp-f4226 --email=CORREO_VERIFICADO
+npm --prefix tools/firebase run bootstrap:admin -- --project=senasapp-a0515 --email=CORREO_VERIFICADO
 ```
 
 Tras revisar que el proyecto y correo sean correctos, agrega `--apply` para asignar `role: admin` en `users/{uid}`. No se usan custom claims. Después de configurar este primer administrador, podrá crear cuentas Persona o Administrador desde la app. El usuario debe iniciar sesión para que la app lea su rol actualizado.

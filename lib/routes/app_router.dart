@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../controllers/app_controller.dart';
 import '../shared/widgets/app_widgets.dart';
 import '../views/access_screens.dart';
+import '../views/conversation_screens.dart';
 import '../views/core_screens.dart';
 import '../views/management_screens.dart';
 import '../views/profile_screens.dart';
@@ -17,7 +18,10 @@ GoRouter createAppRouter(AppController controller) {
       final path = state.uri.path;
       const protectedPaths = {'/profile', '/history', '/settings'};
       final isAdminPath = path == '/admin' || path.startsWith('/admin/');
-      final needsAuthentication = isAdminPath || protectedPaths.contains(path);
+      final isConversationPath =
+          path == '/conversation' || path.startsWith('/conversation/');
+      final needsAuthentication =
+          isAdminPath || isConversationPath || protectedPaths.contains(path);
 
       if (needsAuthentication && !controller.isAuthReady) return null;
       if (needsAuthentication && !controller.isAuthenticated) {
@@ -85,6 +89,17 @@ GoRouter createAppRouter(AppController controller) {
       _secondary('/history', const HistoryScreen()),
       _secondary('/settings', const SettingsScreen()),
       _secondary('/premium', const PremiumScreen()),
+      _secondary('/conversation', const ConversationHomeScreen()),
+      GoRoute(
+        path: '/conversation/room/:code',
+        pageBuilder: (_, state) => _slidePage(
+          state,
+          ConversationRoomScreen(
+            key: ValueKey(state.pathParameters['code']),
+            code: state.pathParameters['code'] ?? '',
+          ),
+        ),
+      ),
       GoRoute(path: '/admin', builder: (_, _) => const AdminDashboardScreen()),
       _secondary('/admin/users', const AdminUsersScreen()),
       _secondary('/admin/dictionary', const DictionaryManagementScreen()),
@@ -92,28 +107,29 @@ GoRouter createAppRouter(AppController controller) {
   );
 }
 
-GoRoute _secondary(String path, Widget child) => GoRoute(
-  path: path,
-  pageBuilder: (_, state) => CustomTransitionPage<void>(
-    key: state.pageKey,
-    child: child,
-    transitionDuration: const Duration(milliseconds: 180),
-    reverseTransitionDuration: const Duration(milliseconds: 140),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      if (MediaQuery.disableAnimationsOf(context)) return child;
-      return FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.025),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
-      );
-    },
-  ),
-);
+GoRoute _secondary(String path, Widget child) =>
+    GoRoute(path: path, pageBuilder: (_, state) => _slidePage(state, child));
+
+CustomTransitionPage<void> _slidePage(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 180),
+      reverseTransitionDuration: const Duration(milliseconds: 140),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.disableAnimationsOf(context)) return child;
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.025),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+    );
 
 class _MainShell extends StatelessWidget {
   const _MainShell({required this.shell});
