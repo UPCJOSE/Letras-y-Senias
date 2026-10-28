@@ -41,6 +41,24 @@ void main() {
     expect(result.suggestions.first.term, 'Hola');
   });
 
+  test('usa la misma seña para singular y plural con o sin tilde', () {
+    final withDays = TranslationService(
+      catalog: const [
+        SignEntry(term: 'Días', category: 'Tiempo', animationKey: 'dias'),
+        SignEntry(term: 'Noche', category: 'Tiempo', animationKey: 'noche'),
+        SignEntry(term: 'Mes', category: 'Tiempo', animationKey: 'mes'),
+      ],
+    );
+    for (final input in ['dia', 'día', 'dias', 'días']) {
+      final result = withDays.translate(input);
+      expect(result.signs.single.term, 'Días', reason: input);
+      expect(result.suggestions, isEmpty, reason: input);
+      expect(result.spelling, isEmpty, reason: input);
+    }
+    expect(withDays.translate('noches').signs.single.term, 'Noche');
+    expect(withDays.translate('meses').signs.single.term, 'Mes');
+  });
+
   test('prepara deletreo cuando no encuentra coincidencias', () {
     final result = service.translate('xyz');
     expect(result.missingWords, ['xyz']);

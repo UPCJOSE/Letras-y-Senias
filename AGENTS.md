@@ -55,7 +55,7 @@ Fuera del alcance de esta fase:
 - Temas claro, oscuro y alto contraste.
 - 19 rutas navegables, incluidas las dos rutas de conversación.
 - Diccionario consultado exclusivamente desde Firestore; el seed local antiguo de 36 términos fue retirado.
-- Normalización que preserva Ñ, coincidencia por frases y alias, sugerencias y deletreo con letras publicadas.
+- Normalización que preserva Ñ, coincidencia por frases, alias y número gramatical (día/días), sugerencias y deletreo con letras publicadas.
 - Modelo opcional de medios LSC70, manifiesto administrativo con vista previa y reproductor de secuencias remotas sin fallback local.
 - Gestión del diccionario con botón «Validar todas» para publicar en lote señas pendientes con medio LSC70 utilizable, después de una confirmación explícita de revisión humana; no constituye validación lingüística automática.
 - Panel administrativo sin menú lateral; acceso directo a Personas y Diccionario. El detalle del diccionario se presenta como hoja ajustada al ancho móvil, y Deletreo dispone de cabecera y regreso al origen.
@@ -74,7 +74,12 @@ lib/
 ├── firebase_options.dart
 ├── main.dart
 ├── controllers/
-│   ├── app_controller.dart
+│   ├── app_controller.dart          # ensambla los mixins y expone el Provider
+│   ├── auth_controller.dart         # sesión, registro, perfil de comunicación
+│   ├── settings_controller.dart     # tema, contraste, notificaciones, velocidad
+│   ├── catalog_controller.dart      # señas y categorías
+│   ├── translation_controller.dart  # traducir, historial, deletreo
+│   ├── admin_controller.dart        # personas, métricas, manifiesto LSC70
 │   └── conversation_controller.dart
 ├── repositories/
 │   ├── conversation_repository.dart
@@ -82,7 +87,13 @@ lib/
 │   ├── sign_repository.dart
 │   └── translation_repository.dart
 ├── models/
-│   └── app_models.dart
+│   ├── app_models.dart              # barrel de export
+│   ├── enums.dart
+│   ├── user.dart
+│   ├── sign.dart
+│   ├── translation.dart
+│   ├── conversation.dart
+│   └── admin.dart
 ├── routes/
 │   └── app_router.dart
 ├── services/
@@ -93,12 +104,20 @@ lib/
 │   ├── shared_latest_stream.dart
 │   └── translation_service.dart
 ├── shared/widgets/
-│   ├── app_widgets.dart
-│   └── lsc70_player.dart
+│   ├── app_widgets.dart             # barrel de export
+│   ├── lsc70_player.dart
+│   └── ...                          # un archivo por widget
 ├── theme/
 │   └── app_theme.dart
 └── views/
-    ├── access_screens.dart
+    ├── access/                      # splash, onboarding, login, registro
+    ├── home/
+    ├── translation/                 # traducir, no encontrada, deletreo
+    ├── dictionary/
+    ├── profile/
+    ├── conversation/
+    ├── admin/
+    ├── access_screens.dart          # barrels de compatibilidad
     ├── conversation_screens.dart
     ├── core_screens.dart
     ├── management_screens.dart
@@ -108,14 +127,14 @@ lib/
 Responsabilidades:
 
 - `models`: estructuras de datos sin widgets.
-- `views`: composición visual y eventos de interfaz.
-- `controllers`: estado y coordinación de flujos.
+- `views`: composición visual y eventos de interfaz, una pantalla por archivo.
+- `controllers`: estado y coordinación de flujos. `AppController` sigue siendo el `ChangeNotifier` que usan las vistas; la lógica está partida en mixins (`AuthController`, `SettingsController`, `CatalogController`, `TranslationController`, `AdminController`).
 - `services`: lógica reutilizable independiente de la interfaz.
 - `routes`: registro central de navegación.
 - `theme`: colores, tipografía y estilos globales.
 - `shared/widgets`: componentes reutilizables.
 
-Las vistas no deben acceder directamente a Firebase. La autenticación actual entra por `AuthService` y es coordinada desde `AppController`; las futuras conexiones deben conservar esta separación mediante servicios y repositorios.
+Las vistas no deben acceder directamente a Firebase. La autenticación actual entra por `AuthService` y es coordinada desde `AuthController` (expuesto por `AppController`); las futuras conexiones deben conservar esta separación mediante servicios y repositorios.
 
 ## 6. Rutas actuales
 
@@ -217,7 +236,7 @@ Comportamiento actual:
 2. Elimina tildes, signos y espacios repetidos.
 3. Reduce repeticiones evidentes como `holaaa`.
 4. Busca primero frases de varias palabras.
-5. Busca palabras y alias exactos.
+5. Busca palabras y alias exactos, incluyendo singular/plural (`día`/`días`, `mes`/`meses`).
 6. Calcula sugerencias mediante distancia de Levenshtein.
 7. Prepara deletreo si no encuentra coincidencias.
 

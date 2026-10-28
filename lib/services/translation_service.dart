@@ -92,14 +92,50 @@ class TranslationService {
       TranslationService(catalog: signs);
 
   SignEntry? _exact(String candidate) {
+    final candidateKeys = lookupKeys(candidate);
     for (final sign in catalog) {
       if (sign.kind != SignKind.word) continue;
-      if (normalize(sign.term) == candidate ||
-          sign.aliases.any((alias) => normalize(alias) == candidate)) {
-        return sign;
-      }
+      final signKeys = {
+        ...lookupKeys(normalize(sign.term)),
+        for (final alias in sign.aliases) ...lookupKeys(normalize(alias)),
+      };
+      if (candidateKeys.any(signKeys.contains)) return sign;
     }
     return null;
+  }
+
+  /// Formas de número (día/días, mes/meses) usadas para coincidir la misma seña.
+  static Set<String> lookupKeys(String normalized) {
+    if (normalized.isEmpty) return const {};
+    final parts = normalized.split(' ');
+    if (parts.length == 1) return _numberForms(parts.single);
+    final prefix = parts.sublist(0, parts.length - 1).join(' ');
+    return {for (final form in _numberForms(parts.last)) '$prefix $form'};
+  }
+
+  static Set<String> _numberForms(String word) {
+    if (word.length < 3 || !RegExp(r'^[a-zñ]+$').hasMatch(word)) {
+      return {word};
+    }
+    final forms = <String>{word};
+    if (RegExp(r'[aeiou]$').hasMatch(word)) {
+      forms.add('${word}s');
+    } else if (!word.endsWith('s')) {
+      forms.add('${word}es');
+    }
+    if (word.endsWith('s') && word.length >= 4) {
+      final singular = word.substring(0, word.length - 1);
+      if (RegExp(r'[aeiou]$').hasMatch(singular)) {
+        forms.add(singular);
+      }
+    }
+    if (word.endsWith('es') && word.length >= 5) {
+      final stem = word.substring(0, word.length - 2);
+      if (RegExp(r'[^aeiouñ]$').hasMatch(stem)) {
+        forms.add(stem);
+      }
+    }
+    return forms;
   }
 
   SignEntry? _letter(String letter) {
